@@ -1,0 +1,22 @@
+{
+  "workerBatchSize": 100,
+  "recipients": [
+    {
+      "id": "sample-recipient",
+      "credits": 100,
+      "enabled": true,
+      "subscriptions": [
+        "sample-channel"
+      ]
+    }
+  ],
+  "statusSources": [
+    {
+      "id": "sample-status-endpoint",
+      "broadcasterId": "sample-channel",
+      "url": "https://status.example.invalid/live.json",
+      "pollIntervalMs": 120000,
+      "confirmationIntervalMs": 10000
+    }
+  ]
+}

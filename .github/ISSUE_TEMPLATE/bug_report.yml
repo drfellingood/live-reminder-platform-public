@@ -1,0 +1,43 @@
+name: Bug report
+description: Report a reproducible defect using fictional or redacted evidence.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste credentials, real recipient identifiers, databases, private endpoints, or production logs.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Observed outcome
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest local reproduction with fictional values.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: Commit SHA or release tag
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Checks run
+      description: Include relevant `npm run check` output and local environment details.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Data-safety confirmation
+      options:
+        - label: I removed secrets, personal data, private URLs, and production evidence.
+          required: true
