@@ -77,7 +77,7 @@ test('invalid explicit server secrets fail before creating data or bootstrapping
 test('invalid stored secrets fail before opening the database or bootstrapping recipients', async () => {
   const workingDirectory = tempDirectory();
   fs.mkdirSync(path.join(workingDirectory, 'dist'));
-  fs.mkdirSync(path.join(workingDirectory, '.data'));
+  fs.mkdirSync(path.join(workingDirectory, '.data'), { mode: 0o700 });
   fs.writeFileSync(path.join(workingDirectory, 'dist', 'index.html'), '<!doctype html><title>Self hosted</title>');
   const secretsPath = path.join(workingDirectory, '.data', 'local-secrets.json');
   fs.writeFileSync(secretsPath, JSON.stringify({ ADMIN_PASSWORD_HASH: 'broken' }));
