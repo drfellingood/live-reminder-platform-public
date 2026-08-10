@@ -4,6 +4,14 @@ A vendor-neutral, self-hosted reference implementation for detecting live-status
 
 The repository does not require a particular cloud account or messaging provider. An operator supplies their own HTTPS status endpoint, delivery webhook, credentials, recipient data, and hosting environment.
 
+## 中文简介
+
+这是一个厂商中立、可自行托管的直播状态提醒平台。它可以检测直播状态变化、确定本次需要提醒的有效接收者，并为每位接收者记录独立的通知结果。
+
+项目不绑定任何云平台或消息服务。使用者可以接入自己的 HTTPS 状态接口、通知 webhook、账号、密钥、订阅者数据和服务器。默认演示仅在本机运行，全部使用虚构内存数据，不会连接外部服务或发送真实通知。
+
+项目会把 `unknown` 视为不确定状态，不会把网络错误误判成下播。发送结果 `accepted` 只表示通知服务接受了请求，并不代表手机一定已经显示通知。真实部署前请阅读[部署文档](docs/DEPLOYMENT.md)和[安全策略](SECURITY.md)。
+
 ## What is included
 
 - A small reminder core with idempotent observations, frozen event denominators, credit reservation, and per-recipient receipts.
@@ -97,12 +105,6 @@ write access and protect the default branch: require CI, at least one approving
 review, resolved conversations, and disable force pushes and branch deletion. Other
 contributors can work from forks. See [Contributing](CONTRIBUTING.md) before accepting
 code or third-party material.
-
-## 中文简介
-
-这是一个厂商中立、可自行托管的直播状态提醒参考实现。默认演示只在本机运行，使用虚构内存数据，不会连接外部服务。真实使用时，部署者需要提供自己的 HTTPS 状态接口、通知 webhook、账号、密钥、订阅者数据和服务器。
-
-项目把 `unknown` 当作不确定状态，不会把网络错误误判成下播。发送端返回 `accepted` 只代表请求被发送端接受，不代表手机已经显示通知。真实部署请先阅读[部署文档](docs/DEPLOYMENT.md)和[安全策略](SECURITY.md)。
 
 ## License
 
