@@ -5,9 +5,9 @@ A self-hosted app that watches a live status and requests one reminder for each 
 > [!TIP]
 > **Don't know how to start? / 不知道怎么开始？**
 >
-> Copy this public GitHub address and send it to an AI assistant, such as Doubao or DeepSeek. Ask it to guide you step by step.
+> Copy this public GitHub address and send it to an AI assistant, such as Doubao or DeepSeek. Some versions can open the link and some cannot, so use the prompt below to make the AI check first.
 >
-> 把下面这个公开 GitHub 地址发给 AI 助手（例如豆包、DeepSeek 等），让它一步一步教你操作。
+> 把下面这个公开 GitHub 地址发给 AI 助手（例如豆包、DeepSeek 等）。不同版本的 AI 能力不同，请使用下方提示词，让 AI 先确认它能否打开链接。
 >
 > `https://github.com/drfellingood/live-reminder-platform-public`
 >
@@ -16,6 +16,36 @@ A self-hosted app that watches a live status and requests one reminder for each 
 > 只发送这个公开地址。不要发送密码、Token、私有网址、数据库文件或真实用户资料；登录和授权必须由你自己完成。
 >
 > Product names are examples only; this project is not affiliated with these services. / 以上名称仅为举例，本项目与这些服务没有隶属或合作关系。
+
+## Copy this prompt / 复制这段提示词
+
+中文：
+
+```text
+请阅读这个公开 GitHub 项目：
+https://github.com/drfellingood/live-reminder-platform-public
+
+请先确认你能否打开并读取这个链接。如果不能，请让我复制公开的 README 给你，不要猜测项目内容。
+先问我使用 Windows、macOS 还是 Linux，以及我是想“运行演示”还是“正式自托管”。
+之后每次只给我一个步骤和一条命令，解释这一步的作用，等我回复运行结果后再继续。
+不要索要或让我上传密码、Token、私有网址、数据库文件、私有配置或真实用户资料。
+不要擅自删除文件、开放公网、修改防火墙或部署真实服务；需要登录或授权时，让我自己操作。
+演示成功不代表真实通知成功。正式上线前，请提醒我检查配置、备份、安全和端到端通知结果。
+```
+
+English:
+
+```text
+Please read this public GitHub project:
+https://github.com/drfellingood/live-reminder-platform-public
+
+First confirm whether you can open and read the link. If you cannot, ask me to paste the public README instead of guessing.
+Ask whether I use Windows, macOS, or Linux, and whether I want to run the demo or self-host it for real use.
+Then give me only one step and one command at a time, explain what it does, and wait for my result before continuing.
+Never ask for passwords, tokens, private URLs, database files, private configuration, or real user data.
+Do not delete files, expose the service publicly, change firewall settings, or deploy a real service without my explicit approval. Let me handle every sign-in and authorization step.
+A successful demo is not proof of real notification delivery. Before real use, remind me to check configuration, backups, security, and end-to-end notification results.
+```
 
 [中文说明](#中文说明)
 
