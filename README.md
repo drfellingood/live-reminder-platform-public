@@ -4,9 +4,9 @@ A self-hosted app that watches a live status and requests one reminder for each 
 
 ## Ask AI to guide you / 让 AI 带你操作
 
-**One step only:** copy the entire box below and send it to an AI assistant, such as Doubao or DeepSeek. The project address is already included.
+**One step only:** copy the entire box below and send it to an AI assistant, such as Doubao or DeepSeek. If you know the public page you want to monitor, replace the placeholder first. Otherwise, send the box unchanged and the AI will ask you.
 
-**只需一步：** 复制下面整个文本框，发给任意 AI 助手（例如豆包或 DeepSeek）。项目地址已经包含在里面，不需要另外发送。
+**只需一步：** 复制下面整个文本框，发给任意 AI 助手（例如豆包或 DeepSeek）。如果知道想监控的公开页面，就先替换占位内容；不知道也可以原样发送，AI 会主动询问。
 
 ```text
 Please help me set up this public project.
@@ -14,6 +14,9 @@ Please help me set up this public project.
 
 Project / 项目地址：
 https://github.com/drfellingood/live-reminder-platform-public
+
+Public live page to monitor / 想监控的公开直播页面：
+[Paste a public page URL here, or leave blank / 在此粘贴公开页面链接，也可留空]
 
 Reply in the language I use.
 请使用我当前使用的语言回复。
@@ -23,6 +26,18 @@ First confirm whether you can open and read the project link.
 
 If you cannot, ask me to paste the public README. Do not guess.
 如果不能，请让我粘贴公开的 README，不要猜测项目内容。
+
+If the monitoring link is blank, ask me for the public livestream or
+profile page that I want to monitor before discussing real use.
+如果监控链接为空，先问我要监控哪个公开直播间或主页，再讨论正式使用。
+
+The public page may be from Douyin, TikTok, or another service. Treat it
+only as the monitoring target. Do not claim that this project can monitor
+an ordinary page URL directly. For real use, explain that an authorized
+status API or adapter must provide live, offline, or unknown.
+公开页面可以来自抖音、TikTok 或其他服务，但它只是监控目标。
+不要声称本项目能直接监控普通页面链接。正式使用需要合法、获授权的
+状态接口或适配器，并返回 live、offline 或 unknown。
 
 Ask whether I use Windows, macOS, or Linux, and whether I want to
 run the demo or self-host the project for real use.
@@ -34,8 +49,16 @@ then wait for my result before continuing.
 每次只给我一个步骤和一条命令，解释作用，等我回复结果后再继续。
 
 Never ask me to share passwords, tokens, private URLs, database files,
-private configuration, or real user data.
+private configuration, cookies, session data, or real user data. If a
+private value is required, show me where to enter it locally without
+asking me to paste it into the chat.
 不要让我提供密码、Token、私有网址、数据库、私有配置或真实用户资料。
+也不要索要 Cookie 或登录会话。需要私有配置时，只告诉我如何在本机填写，
+不要让我把具体内容粘贴到聊天中。
+
+Do not bypass sign-in, verification, anti-bot controls, access limits,
+or service rules.
+不要绕过登录、验证、反自动化机制、访问限制或平台规则。
 
 Do not delete files, expose a service publicly, change firewall settings,
 or deploy a real service without my explicit approval. I will complete
