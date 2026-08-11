@@ -19,6 +19,10 @@ Include the affected commit, minimal reproduction steps, impact, and a redacted 
 - Store runtime values in a secret manager or ignored private environment file. Never commit them, print them in CI logs, add them to browser code, or expose them through client-prefixed variables.
 - Rotate a disclosed secret, invalidate related sessions, and review observation, operator, and delivery records for abuse.
 
+## Data minimization
+
+Source files, fixtures, screenshots, issues, and pull requests must not contain data copied from a real deployment. Operators should collect only what the installation needs, restrict access, define retention and deletion rules, and follow the laws and service terms that apply to their deployment.
+
 ## Network boundary
 
 The self-hosted server binds to loopback by default. Remote binding requires explicit opt-in, but that flag is not an authentication or encryption control. Put the service behind a maintained HTTPS reverse proxy, firewall the Node port, and keep secure cookies enabled.
@@ -58,4 +62,4 @@ An HTTP 2xx from the configured sender is recorded as `accepted`; it does not es
 
 ## 中文摘要
 
-真实密钥、状态地址、通知鉴权、数据库和备份都必须放在 Git 之外。公网部署需要 HTTPS、反向代理、防火墙和额外限流。观察接口支持 Bearer 或对“时间戳 + 原始请求体”计算的 HMAC。SQLite 版本只按单进程使用；备份必须经过真实恢复测试。发送端接受请求不等于手机已经显示通知。
+真实密钥、状态地址、通知鉴权、数据库和备份都必须放在 Git 之外。源码、测试、截图、Issue 和 PR 不得包含真实部署数据；运营者应最小化收集并设置保留和删除规则。公网部署需要 HTTPS、反向代理、防火墙和额外限流。观察接口支持 Bearer 或对“时间戳 + 原始请求体”计算的 HMAC。SQLite 版本只按单进程使用；备份必须经过真实恢复测试。发送端接受请求不等于手机已经显示通知。

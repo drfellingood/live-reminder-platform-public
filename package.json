@@ -14,7 +14,6 @@
     "preview": "vite preview",
     "demo": "npm run build && node server/demo-server.cjs",
     "start": "npm run build && node --env-file-if-exists=.env server/start.cjs",
-    "selfhost": "npm start",
     "admin:secrets": "node tools/generate-admin-secrets.cjs",
     "test": "node --test tests/*.test.cjs",
     "check": "npm run test && npm run build"

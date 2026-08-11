@@ -54,11 +54,10 @@ test('example configuration contains no populated secret', () => {
 });
 
 test('browser bundles never contain server secret variable names', () => {
-  const browserSource = [
-    path.join(root, 'src', 'App.jsx'),
-    path.join(root, 'src', 'AdminDashboard.jsx'),
-    path.join(root, 'src', 'app-copy.js'),
-  ].map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+  const browserSource = listFiles(path.join(root, 'src'))
+    .filter((file) => ['.js', '.jsx'].includes(path.extname(file)))
+    .map((file) => fs.readFileSync(file, 'utf8'))
+    .join('\n');
   assert.doesNotMatch(browserSource, /ADMIN_PASSWORD_HASH|ADMIN_SESSION_SECRET|OBSERVATION_SECRET|OPERATOR_SECRET|DELIVERY_WEBHOOK_BEARER_TOKEN/);
 });
 

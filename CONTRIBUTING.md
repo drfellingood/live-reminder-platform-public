@@ -5,9 +5,9 @@ access to an operator's server, credentials, recipients, or private evidence.
 
 ## Start here
 
-Read the [repository rules](AGENTS.md), [architecture](docs/ARCHITECTURE.md),
-[configuration guide](docs/CONFIGURATION.md), [security policy](SECURITY.md), and
-[source provenance](docs/SOURCE_PROVENANCE.md).
+Read the [architecture](docs/ARCHITECTURE.md),
+[configuration guide](docs/CONFIGURATION.md), [security policy](SECURITY.md),
+and [source provenance](docs/SOURCE_PROVENANCE.md).
 
 Use Node.js 22.13 or newer and install the locked dependency graph:
 

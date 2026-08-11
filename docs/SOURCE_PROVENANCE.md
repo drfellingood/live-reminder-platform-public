@@ -22,6 +22,12 @@ Earlier private ZIP archives, private production trees, production databases, lo
 
 Public fixtures use fictional identifiers and neutral data. A contributor who introduces real or third-party material must document the source, permission, and applicable license before merge.
 
+## Media and asset boundary
+
+This source tree contains no project-owned raster images, photographs, audio, video, fonts, or copied brand artwork. Interface icons come from the separately licensed `@tabler/icons-react` dependency listed in [Third-party notices](../THIRD_PARTY_NOTICES.md).
+
+Before adding media, document its creator, creation method, permission, license, cryptographic hash, continuing product need, and any person, trademark, or third-party reference involved. Availability online or in an earlier private archive is not permission to redistribute it.
+
 ## What this statement does not claim
 
 This file documents the repository boundary and the intended public implementation date. It is not legal advice and does not assert a court-tested clean-room process, exclusive ownership of general ideas, or the absence of every possible third-party right.
@@ -47,4 +53,4 @@ Before a public release:
 
 ## 中文说明
 
-本仓库记录的是 2026-08-10 整理的厂商中立公开实现。旧的私有 ZIP、生产代码树、数据库、日志、密钥、备份和事故证据不在仓库内，也不是运行依赖。本说明只界定公开仓库范围，不构成法律上的“洁净室”结论或完整权利保证。第三方依赖继续使用各自许可证。
+本仓库记录的是 2026-08-10 整理的厂商中立公开实现。旧的私有 ZIP、生产代码树、数据库、日志、密钥、备份和事故证据不在仓库内，也不是运行依赖。本说明只界定公开仓库范围，不构成法律上的“洁净室”结论或完整权利保证。当前源码树不包含项目自有照片、音视频、字体或复制的品牌素材；新增媒体前必须记录来源、授权、许可证和哈希。第三方依赖继续使用各自许可证。

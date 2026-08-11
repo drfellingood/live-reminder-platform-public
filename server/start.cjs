@@ -436,11 +436,6 @@ function nonNegativeInteger(value, name) {
   return value;
 }
 
-function positiveInteger(value, name) {
-  if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${name} must be a positive integer`);
-  return value;
-}
-
 function boundedInteger(value, minimum, maximum, name) {
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
     throw new Error(`${name} must be an integer between ${minimum} and ${maximum}`);

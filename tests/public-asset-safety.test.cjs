@@ -22,7 +22,7 @@ test('public source ships no unreviewed media or copied branding assets', () => 
   const blocked = publicFiles.filter((file) => blockedMediaExtensions.has(path.extname(file).toLowerCase()));
   assert.deepEqual(blocked, []);
 
-  const provenance = fs.readFileSync(path.join(root, 'docs', 'ASSET_PROVENANCE.md'), 'utf8');
+  const provenance = fs.readFileSync(path.join(root, 'docs', 'SOURCE_PROVENANCE.md'), 'utf8');
   assert.match(provenance, /contains no project-owned raster images/i);
   assert.match(provenance, /creator, creation method, permission, license/i);
 });
