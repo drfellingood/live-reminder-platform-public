@@ -2,6 +2,21 @@
 
 A self-hosted app that watches a live status and requests one reminder for each subscribed user.
 
+> [!TIP]
+> **Don't know how to start? / 不知道怎么开始？**
+>
+> Copy this public GitHub address and send it to an AI assistant, such as Doubao or DeepSeek. Ask it to guide you step by step.
+>
+> 把下面这个公开 GitHub 地址发给 AI 助手（例如豆包、DeepSeek 等），让它一步一步教你操作。
+>
+> `https://github.com/drfellingood/live-reminder-platform-public`
+>
+> Share only this public address. Never send passwords, tokens, private URLs, database files, or real user data. Sign in and approve access yourself.
+>
+> 只发送这个公开地址。不要发送密码、Token、私有网址、数据库文件或真实用户资料；登录和授权必须由你自己完成。
+>
+> Product names are examples only; this project is not affiliated with these services. / 以上名称仅为举例，本项目与这些服务没有隶属或合作关系。
+
 [中文说明](#中文说明)
 
 > **Start here:** The demo works immediately. Real phone notifications do not. For real use, you must connect your own status API and notification service.
@@ -42,14 +57,6 @@ Open the address and enter the password. The demo uses fictional data and never 
 ## Use it for real
 
 This is technical setup, not a no-code step. Ask a developer or server administrator for help if you do not already operate the services below.
-
-You can also ask an AI coding assistant, such as Doubao or DeepSeek, to guide you step by step. These are examples only; this project is not affiliated with either service.
-
-When using AI:
-
-- never share passwords, tokens, private URLs, database files, or real user data;
-- sign in to accounts and approve access yourself;
-- check the configuration, backups, security, and real notification result before going live.
 
 You need both of these before real reminders can work:
 
@@ -150,14 +157,6 @@ npm run demo
 ## 正式使用
 
 下面不是“无代码”操作。如果你还没有自己的接口和服务器，请让开发或运维人员协助。
-
-也可以让 AI 编程助手（例如豆包、DeepSeek 等）一步一步协助你。以上仅为举例，本项目与这些服务没有隶属或合作关系。
-
-使用 AI 时：
-
-- 不要把密码、token、私有网址、数据库文件或真实用户资料发给 AI；
-- 账号登录和授权必须由你自己完成；
-- 上线前仍要检查配置、备份、安全和真实通知结果。
 
 你必须先准备好：
 
