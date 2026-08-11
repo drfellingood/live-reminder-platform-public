@@ -16,6 +16,9 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
   const settings = Object.freeze({
     creditCost: positiveInteger(policy.creditCost ?? 1, 'policy.creditCost'),
     defaultDeliveryLimit: boundedInteger(policy.defaultDeliveryLimit ?? 100, 1, 1_000, 'policy.defaultDeliveryLimit'),
+    deliveryConcurrency: boundedInteger(policy.deliveryConcurrency ?? 8, 1, 100, 'policy.deliveryConcurrency'),
+    deliveryDeadlineMs: boundedInteger(policy.deliveryDeadlineMs ?? 120_000, 1_000, 900_000, 'policy.deliveryDeadlineMs'),
+    deliveryRetryDelayMs: boundedInteger(policy.deliveryRetryDelayMs ?? 5_000, 100, 60_000, 'policy.deliveryRetryDelayMs'),
     maxObservationFutureSkewMs: boundedInteger(
       policy.maxObservationFutureSkewMs ?? 300_000,
       0,
@@ -77,6 +80,17 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
       case 'recipient': {
         const recipientId = requiredId(query.recipientId, 'recipientId');
         return store.read((state) => recipientView(ensureState(state), recipientId));
+      }
+      case 'recipient-context': {
+        const recipientId = requiredId(query.recipientId, 'recipientId');
+        const broadcasterIds = requiredIdList(query.broadcasterIds, 'broadcasterIds', 1_000);
+        const deliveryLimit = boundedInteger(query.deliveryLimit ?? 50, 0, 200, 'deliveryLimit');
+        return store.read((state) => recipientContextView(
+          ensureState(state),
+          recipientId,
+          broadcasterIds,
+          deliveryLimit,
+        ));
       }
       default:
         throw new RangeError(`unsupported query kind: ${String(query.kind)}`);
@@ -158,6 +172,9 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
     const grantId = requiredId(command.grantId, 'grantId');
     const recipientId = requiredId(command.recipientId, 'recipientId');
     const credits = positiveInteger(command.credits, 'credits');
+    const availableCreditsCap = command.availableCreditsCap === undefined
+      ? null
+      : positiveInteger(command.availableCreditsCap, 'availableCreditsCap');
     const timestamp = nowIso(clock);
     return store.transact((rawState) => {
       const state = ensureState(rawState);
@@ -175,6 +192,24 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
           credits,
           availableCredits: recipient.availableCredits,
         };
+      }
+      if (availableCreditsCap !== null) {
+        const reservedCredits = Object.values(state.receipts)
+          .filter((receipt) => receipt.recipientId === recipientId && receipt.accountingStatus === 'reserved')
+          .reduce((sum, receipt) => safeIntegerSum(sum, receipt.creditCost, 'reservedCredits'), 0);
+        const currentEntitlement = safeIntegerSum(
+          recipient.availableCredits,
+          reservedCredits,
+          'available and reserved credits',
+        );
+        const nextEntitlement = safeIntegerSum(currentEntitlement, credits, 'available credit entitlement');
+        if (nextEntitlement > availableCreditsCap) {
+          throw publicCommandError(
+            'available and reserved credits reached the configured maximum',
+            409,
+            'CREDITS_LIMIT_REACHED',
+          );
+        }
       }
       const availableCredits = safeIntegerSum(recipient.availableCredits, credits, 'availableCredits');
       const grantedCredits = safeIntegerSum(recipient.grantedCredits, credits, 'grantedCredits');
@@ -211,8 +246,11 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
     if (!VALID_STATUSES.has(status)) {
       throw new RangeError('status must be live, offline, or unknown');
     }
-    const observedAt = optionalIso(command.observedAt, clock);
-    if (Date.parse(observedAt) > Date.parse(nowIso(clock)) + settings.maxObservationFutureSkewMs) {
+    const receivedAt = nowIso(clock);
+    const observedAt = command.observedAt === undefined || command.observedAt === null
+      ? receivedAt
+      : optionalIso(command.observedAt, clock);
+    if (Date.parse(observedAt) > Date.parse(receivedAt) + settings.maxObservationFutureSkewMs) {
       throw publicCommandError(
         'observedAt is too far in the future',
         400,
@@ -232,7 +270,7 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
         stableStatus: null,
         lastObservedAt: null,
         lastEventId: null,
-        createdAt: observedAt,
+        createdAt: receivedAt,
       };
       state.broadcasters[broadcasterId] = broadcaster;
 
@@ -337,7 +375,7 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
         return { action: 'stable-updated', broadcasterId, previousStatus, stableStatus: 'offline', eventId: null };
       }
 
-      const eventId = nextEventId(state, observedAt);
+      const eventId = nextEventId(state, receivedAt);
       const eligibleRecipientIds = Object.values(state.subscriptions)
         .filter((subscription) => subscription.broadcasterId === broadcasterId && subscription.active)
         .map((subscription) => state.recipients[subscription.recipientId])
@@ -354,7 +392,8 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
         observationId,
         evidence,
         occurredAt: observedAt,
-        createdAt: observedAt,
+        createdAt: receivedAt,
+        deliveryDeadlineAt: addMilliseconds(receivedAt, settings.deliveryDeadlineMs),
         eligibleRecipientIds,
         denominator: eligibleRecipientIds.length,
         creditCost: settings.creditCost,
@@ -365,7 +404,7 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
       for (const recipientId of eligibleRecipientIds) {
         const recipient = state.recipients[recipientId];
         recipient.availableCredits -= settings.creditCost;
-        recipient.updatedAt = observedAt;
+        recipient.updatedAt = receivedAt;
         const key = receiptKey(eventId, recipientId);
         if (!state.receipts[key]) {
           state.receipts[key] = {
@@ -377,8 +416,8 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
             accountingStatus: 'reserved',
             creditCost: settings.creditCost,
             attemptCount: 0,
-            createdAt: observedAt,
-            updatedAt: observedAt,
+            createdAt: receivedAt,
+            updatedAt: receivedAt,
             handsetDisplayed: 'unverified',
           };
         }
@@ -407,35 +446,81 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
 
   async function deliverPending(command) {
     const limit = boundedInteger(command.limit ?? settings.defaultDeliveryLimit, 1, 1_000, 'limit');
-    const counts = { claimed: 0, accepted: 0, failed: 0, ambiguous: 0 };
-    while (counts.claimed < limit) {
+    const counts = { claimed: 0, accepted: 0, failed: 0, ambiguous: 0, retryable: 0 };
+    let remainingClaims = limit;
+
+    async function runDeliveryLane() {
+      while (remainingClaims > 0) {
+        remainingClaims -= 1;
+        const claim = await claimNextReceipt();
+        counts.failed += claim.expired;
+        const envelope = claim.envelope;
+        if (!envelope) return;
+        counts.claimed += 1;
+        const result = await deliverEnvelope(envelope);
+        counts[result.status] += 1;
+        await settleEnvelope(envelope, result);
+      }
+    }
+
+    async function claimNextReceipt() {
       const claimedAt = nowIso(clock);
-      const envelope = await store.transact((rawState) => {
+      return store.transact((rawState) => {
         const state = ensureState(rawState);
-        const receipt = Object.values(state.receipts)
+        const receipts = Object.values(state.receipts)
           .filter((item) => item.deliveryStatus === 'pending')
-          .sort(compareReceipts)[0];
-        if (!receipt) return null;
-        const event = state.events[receipt.eventId];
-        receipt.deliveryStatus = 'in-flight';
-        receipt.attemptCount += 1;
-        receipt.attemptStartedAt = claimedAt;
-        receipt.updatedAt = claimedAt;
-        return {
-          idempotencyKey: receipt.idempotencyKey,
-          eventId: receipt.eventId,
-          broadcasterId: receipt.broadcasterId,
-          recipientId: receipt.recipientId,
-          occurredAt: event.occurredAt,
-          source: event.source,
-          attempt: receipt.attemptCount,
-        };
+          .sort(compareReceipts);
+        let expired = 0;
+        for (const receipt of receipts) {
+          const event = state.events[receipt.eventId];
+          if (!event) throw new Error(`event missing while claiming receipt: ${receipt.eventId}`);
+          event.deliveryDeadlineAt ??= addMilliseconds(event.createdAt || event.occurredAt, settings.deliveryDeadlineMs);
+          const deadlineMs = Date.parse(event.deliveryDeadlineAt);
+          if (!Number.isFinite(deadlineMs)) throw new Error(`event delivery deadline is invalid: ${receipt.eventId}`);
+          if (Date.parse(claimedAt) >= deadlineMs) {
+            settleReceipt(state, receipt, {
+              status: 'failed',
+              code: 'delivery-deadline-expired',
+              detail: 'delivery was not attempted after its deadline',
+            }, claimedAt);
+            expired += 1;
+            continue;
+          }
+          if (receipt.nextAttemptAt && Date.parse(receipt.nextAttemptAt) > Date.parse(claimedAt)) continue;
+          receipt.deliveryStatus = 'in-flight';
+          receipt.attemptCount += 1;
+          receipt.attemptStartedAt = claimedAt;
+          receipt.updatedAt = claimedAt;
+          return {
+            expired,
+            envelope: {
+              idempotencyKey: receipt.idempotencyKey,
+              eventId: receipt.eventId,
+              broadcasterId: receipt.broadcasterId,
+              recipientId: receipt.recipientId,
+              occurredAt: event.occurredAt,
+              deliveryDeadlineAt: event.deliveryDeadlineAt,
+              source: event.source,
+              attempt: receipt.attemptCount,
+            },
+          };
+        }
+        return { expired, envelope: null };
       });
-      if (!envelope) break;
-      counts.claimed += 1;
+    }
+
+    async function deliverEnvelope(envelope) {
       let result;
       try {
-        result = normalizeDeliveryResult(await delivery.deliver(Object.freeze({ ...envelope })));
+        if (Date.parse(nowIso(clock)) >= Date.parse(envelope.deliveryDeadlineAt)) {
+          result = {
+            status: 'failed',
+            code: 'delivery-deadline-expired',
+            detail: 'delivery was not attempted after its deadline',
+          };
+        } else {
+          result = normalizeDeliveryResult(await delivery.deliver(Object.freeze({ ...envelope })));
+        }
       } catch (error) {
         result = {
           status: 'ambiguous',
@@ -443,15 +528,21 @@ function createReminderCore({ store, delivery, clock = Date, policy = {}, readOn
           detail: safeErrorMessage(error),
         };
       }
-      counts[result.status] += 1;
+      return result;
+    }
+
+    async function settleEnvelope(envelope, result) {
       const settledAt = nowIso(clock);
       await store.transact((rawState) => {
         const state = ensureState(rawState);
         const receipt = state.receipts[receiptKey(envelope.eventId, envelope.recipientId)];
         if (!receipt || receipt.deliveryStatus !== 'in-flight') return;
-        settleReceipt(state, receipt, result, settledAt);
+        settleReceipt(state, receipt, result, settledAt, settings.deliveryRetryDelayMs);
       });
     }
+
+    const laneCount = Math.min(settings.deliveryConcurrency, limit);
+    await Promise.all(Array.from({ length: laneCount }, () => runDeliveryLane()));
     return { action: 'delivery-work-complete', counts };
   }
 
@@ -548,11 +639,22 @@ function createEmptyState() {
   return ensureState({});
 }
 
-function settleReceipt(state, receipt, result, timestamp) {
+function settleReceipt(state, receipt, result, timestamp, retryDelayMs = 5_000) {
+  if (result.status === 'retryable') {
+    receipt.deliveryStatus = 'pending';
+    receipt.updatedAt = timestamp;
+    receipt.evidenceAt = timestamp;
+    receipt.nextAttemptAt = addMilliseconds(timestamp, retryDelayMs);
+    receipt.handsetDisplayed = 'unverified';
+    if (result.code !== undefined) receipt.code = String(result.code);
+    if (result.detail !== undefined) receipt.detail = String(result.detail);
+    return;
+  }
   receipt.deliveryStatus = result.status;
   receipt.updatedAt = timestamp;
   receipt.evidenceAt = timestamp;
   receipt.handsetDisplayed = 'unverified';
+  delete receipt.nextAttemptAt;
   if (result.providerReference !== undefined) receipt.providerReference = String(result.providerReference);
   if (result.code !== undefined) receipt.code = String(result.code);
   if (result.detail !== undefined) receipt.detail = String(result.detail);
@@ -580,7 +682,7 @@ function normalizeDeliveryResult(result) {
     return { status: 'ambiguous', code: 'invalid-adapter-result' };
   }
   const status = String(result.status || '').toLowerCase();
-  if (!['accepted', 'failed', 'ambiguous'].includes(status)) {
+  if (!['accepted', 'failed', 'ambiguous', 'retryable'].includes(status)) {
     return { status: 'ambiguous', code: 'invalid-adapter-status' };
   }
   return {
@@ -681,6 +783,54 @@ function recipientView(state, recipientId) {
   };
 }
 
+function recipientContextView(state, recipientId, broadcasterIds, deliveryLimit) {
+  const recipient = recipientView(state, recipientId);
+  if (!recipient) return null;
+  const subscriptions = Object.values(state.subscriptions)
+    .filter((subscription) => subscription.recipientId === recipientId)
+    .sort((left, right) => left.broadcasterId.localeCompare(right.broadcasterId))
+    .map((subscription) => ({
+      broadcasterId: subscription.broadcasterId,
+      active: subscription.active,
+      updatedAt: subscription.updatedAt,
+    }));
+  const deliveries = Object.values(state.receipts)
+    .filter((receipt) => receipt.recipientId === recipientId)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) ||
+      right.idempotencyKey.localeCompare(left.idempotencyKey))
+    .slice(0, deliveryLimit)
+    .map((receipt) => {
+      const event = state.events[receipt.eventId];
+      return {
+        eventId: receipt.eventId,
+        broadcasterId: receipt.broadcasterId,
+        occurredAt: event ? event.occurredAt : receipt.createdAt,
+        deliveryStatus: receipt.deliveryStatus,
+        accountingStatus: receipt.accountingStatus,
+        updatedAt: receipt.updatedAt,
+        handsetDisplayed: 'unverified',
+      };
+    });
+  return {
+    recipientId: recipient.recipientId,
+    enabled: recipient.enabled,
+    availableCredits: recipient.availableCredits,
+    reservedCredits: recipient.reservedCredits,
+    consumedCredits: recipient.consumedCredits,
+    refundedCredits: recipient.refundedCredits,
+    subscriptions,
+    channels: broadcasterIds.map((broadcasterId) => {
+      const broadcaster = state.broadcasters[broadcasterId];
+      return {
+        broadcasterId,
+        status: broadcaster && broadcaster.stableStatus ? broadcaster.stableStatus : 'unknown',
+        observedAt: broadcaster && broadcaster.lastObservedAt ? broadcaster.lastObservedAt : null,
+      };
+    }),
+    deliveries,
+  };
+}
+
 function receiptCounts(receipts, denominator, eligibleRecipientIds = []) {
   const pending = countStatus(receipts, 'pending');
   const inFlight = countStatus(receipts, 'in-flight');
@@ -761,6 +911,14 @@ function requiredId(value, name) {
   return normalized;
 }
 
+function requiredIdList(value, name, maximumItems) {
+  if (!Array.isArray(value)) throw new TypeError(`${name} must be an array`);
+  if (value.length > maximumItems) throw new RangeError(`${name} may contain at most ${maximumItems} items`);
+  const normalized = value.map((item) => requiredId(item, name));
+  if (new Set(normalized).size !== normalized.length) throw new RangeError(`${name} must not contain duplicates`);
+  return normalized;
+}
+
 function nonNegativeInteger(value, name) {
   if (!Number.isSafeInteger(value) || value < 0) throw new RangeError(`${name} must be a non-negative safe integer`);
   return value;
@@ -828,6 +986,12 @@ function nowIso(clock) {
   const parsed = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(parsed.getTime())) throw new RangeError('clock returned an invalid date');
   return parsed.toISOString();
+}
+
+function addMilliseconds(timestamp, milliseconds) {
+  const base = Date.parse(timestamp);
+  if (!Number.isFinite(base)) throw new RangeError('timestamp must be a valid date');
+  return new Date(base + milliseconds).toISOString();
 }
 
 function safeErrorMessage(error) {

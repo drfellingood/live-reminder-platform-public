@@ -1,0 +1,46 @@
+<view class="page-shell">
+  <view class="card state-card" wx:if="{{viewState === 'loading'}}">
+    <view class="spinner" aria-hidden="true"></view>
+    <view class="state-title">{{t.loading}}</view>
+  </view>
+
+  <view class="card state-card" wx:elif="{{viewState === 'error' || viewState === 'unauthorized'}}">
+    <view class="state-symbol" aria-hidden="true">!</view>
+    <view class="state-title">{{errorTitle}}</view>
+    <view class="state-body">{{errorMessage}}</view>
+    <button class="inline-button" bindtap="onRetry">{{viewState === 'unauthorized' ? t.reauthenticate : t.retry}}</button>
+  </view>
+
+  <block wx:else>
+    <view class="notice first-notice">{{t.targetsHint}}</view>
+    <view class="section-label">{{t.targetListSection}}</view>
+
+    <view class="card state-card" wx:if="{{viewState === 'empty'}}">
+      <view class="state-symbol" aria-hidden="true">–</view>
+      <view class="state-title">{{t.noTargetsTitle}}</view>
+      <view class="state-body">{{t.noTargetsBody}}</view>
+    </view>
+
+    <view class="card" wx:else>
+      <view class="target-row" wx:for="{{channels}}" wx:key="id">
+        <view class="target-copy">
+          <view class="target-heading">
+            <view class="target-name">{{item.displayName}}</view>
+            <view class="status-pill {{item.displayState}}">{{item.statusText}}</view>
+          </view>
+          <view class="target-meta">{{t.sourceLabel}} · {{item.sourceLabel}}</view>
+          <view class="target-meta">{{t.updatedAt}} · {{item.updatedAtLabel}}</view>
+          <view class="target-choice">{{item.saving ? t.subscriptionSaving : (item.subscribed ? t.subscribed : t.notSubscribed)}}</view>
+        </view>
+        <switch
+          color="#34c759"
+          checked="{{item.subscribed}}"
+          disabled="{{item.saving}}"
+          data-channel-id="{{item.id}}"
+          bindchange="onSubscriptionToggle"
+          aria-label="{{item.displayName}} · {{item.subscribed ? t.subscribed : t.notSubscribed}}"
+        />
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,82 @@
+.first-notice {
+  margin-top: 0;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.activity-card {
+  padding: 26rpx;
+}
+
+.activity-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.activity-kind {
+  color: #6e6e73;
+  font-size: 23rpx;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.result-pill {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 650;
+}
+
+.result-pill.live,
+.result-pill.accepted {
+  color: #16783b;
+  background: #e8f8ee;
+}
+
+.result-pill.offline {
+  color: #68686e;
+  background: #eeeef1;
+}
+
+.result-pill.unknown,
+.result-pill.ambiguous {
+  color: #9b6300;
+  background: #fff3d8;
+}
+
+.result-pill.pending,
+.result-pill.in-flight {
+  color: #47647d;
+  background: #edf4fb;
+}
+
+.result-pill.failed {
+  color: #b3231a;
+  background: #ffeceb;
+}
+
+.activity-channel {
+  margin-top: 20rpx;
+  font-size: 31rpx;
+  font-weight: 700;
+}
+
+.activity-time {
+  margin-top: 8rpx;
+  color: #6e6e73;
+  font-size: 23rpx;
+}
+
+.activity-boundary {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  color: #6e6e73;
+  border-top: 1rpx solid #ececf0;
+  font-size: 23rpx;
+}

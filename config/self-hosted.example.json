@@ -1,15 +1,40 @@
 {
   "workerBatchSize": 100,
-  "recipients": [
+  "policy": {
+    "creditCost": 1,
+    "defaultDeliveryLimit": 100,
+    "deliveryConcurrency": 8,
+    "deliveryDeadlineMs": 120000,
+    "deliveryRetryDelayMs": 5000
+  },
+  "client": {
+    "enabled": false,
+    "sessionTtlMs": 2592000000,
+    "maxSessionsPerIdentity": 5,
+    "grantIntentTtlMs": 300000,
+    "maxCredits": 200,
+    "template": {
+      "page": "pages/monitor/monitor",
+      "state": "developer",
+      "language": "zh_CN",
+      "fields": {
+        "thing1": { "source": "broadcasterId", "maxLength": 20 },
+        "time2": { "source": "occurredAt", "maxLength": 32 }
+      }
+    }
+  },
+  "channels": [
     {
-      "id": "sample-recipient",
-      "credits": 100,
+      "id": "sample-channel",
+      "displayName": "Sample Channel",
+      "platform": "Example Platform",
+      "description": "Replace this fictional entry with a channel you are authorized to monitor.",
       "enabled": true,
-      "subscriptions": [
-        "sample-channel"
-      ]
+      "sort": 10,
+      "staleAfterMs": 360000
     }
   ],
+  "recipients": [],
   "statusSources": [
     {
       "id": "sample-status-endpoint",

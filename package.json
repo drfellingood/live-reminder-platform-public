@@ -1,6 +1,6 @@
 {
   "name": "live-reminder-platform",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "A vendor-neutral, self-hosted live-status reminder platform with auditable per-recipient delivery evidence.",
   "private": true,
   "type": "module",

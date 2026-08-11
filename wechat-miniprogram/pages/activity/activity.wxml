@@ -1,0 +1,38 @@
+<view class="page-shell">
+  <view class="card state-card" wx:if="{{viewState === 'loading'}}">
+    <view class="spinner" aria-hidden="true"></view>
+    <view class="state-title">{{t.loading}}</view>
+  </view>
+
+  <view class="card state-card" wx:elif="{{viewState === 'error' || viewState === 'unauthorized'}}">
+    <view class="state-symbol" aria-hidden="true">!</view>
+    <view class="state-title">{{errorTitle}}</view>
+    <view class="state-body">{{errorMessage}}</view>
+    <button class="inline-button" bindtap="onRetry">{{viewState === 'unauthorized' ? t.reauthenticate : t.retry}}</button>
+  </view>
+
+  <block wx:else>
+    <view class="notice first-notice">{{t.activityHint}}</view>
+    <view class="section-label">{{t.activitySection}}</view>
+
+    <view class="card state-card" wx:if="{{viewState === 'empty'}}">
+      <view class="state-symbol" aria-hidden="true">–</view>
+      <view class="state-title">{{t.noActivityTitle}}</view>
+      <view class="state-body">{{t.noActivityBody}}</view>
+    </view>
+
+    <view class="activity-list" wx:else>
+      <view class="card activity-card" wx:for="{{entries}}" wx:key="id">
+        <view class="activity-topline">
+          <view class="activity-kind">{{item.kindText}}</view>
+          <view class="result-pill {{item.value}}">{{item.title}}</view>
+        </view>
+        <view class="activity-channel">{{item.channelName}}</view>
+        <view class="activity-time">{{item.timestampLabel}}</view>
+        <view class="activity-boundary" wx:if="{{item.kind === 'reminder'}}">{{item.handsetText}}</view>
+      </view>
+    </view>
+
+    <view class="notice">{{t.acceptedNotDisplayed}}</view>
+  </block>
+</view>

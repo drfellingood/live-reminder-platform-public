@@ -1,0 +1,9 @@
+{
+  "desc": "Public client pages",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

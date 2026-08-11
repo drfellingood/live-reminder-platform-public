@@ -13,6 +13,7 @@ function generateAdminSecrets() {
     ADMIN_SESSION_SECRET: independentSecret(),
     OBSERVATION_SECRET: independentSecret(),
     OPERATOR_SECRET: independentSecret(),
+    CLIENT_IDENTITY_SECRET: independentSecret(),
   });
 }
 
@@ -23,10 +24,11 @@ function printAdminSecrets(values = generateAdminSecrets(), output = process.std
     'ADMIN_SESSION_SECRET',
     'OBSERVATION_SECRET',
     'OPERATOR_SECRET',
+    'CLIENT_IDENTITY_SECRET',
   ]) {
     output.write(`${name}=${values[name]}\n`);
   }
-  diagnostics.write('ADMIN_PASSWORD_HASH is derived from ADMIN_PASSWORD. The session, observation, and operator secrets are generated independently and must not be reused.\n');
+  diagnostics.write('ADMIN_PASSWORD_HASH is derived from ADMIN_PASSWORD. Session, observation, operator, and client-identity secrets are generated independently and must not be reused.\n');
   diagnostics.write('Store these values in a private secret manager. The plaintext administrator password is shown only in this output.\n');
 }
 

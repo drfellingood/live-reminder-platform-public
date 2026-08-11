@@ -2,15 +2,21 @@
 
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const net = require('node:net');
 const path = require('node:path');
 
 const { createReminderCore } = require('../core/reminder-core.cjs');
 const { createLocalInboxDelivery } = require('../adapters/delivery/local-inbox.cjs');
 const { createWebhookDelivery } = require('../adapters/delivery/webhook.cjs');
+const { createWechatSubscribeDelivery } = require('../adapters/delivery/wechat-subscribe.cjs');
+const { createWechatMiniProgramIdentity } = require('../adapters/identity/wechat-mini-program.cjs');
+const { createSqliteClientStore } = require('../adapters/storage/sqlite-client-store.cjs');
 const { createSqliteStore } = require('../adapters/storage/sqlite-store.cjs');
 const { createHttpJsonStatusSource } = require('../sources/http-json-status-source.cjs');
 const { createPollScheduler } = require('../sources/poll-scheduler.cjs');
 const { hashAdminPassword } = require('./admin-server.cjs');
+const { createClientPortal } = require('./client-portal.cjs');
+const { createClientRequestHandler } = require('./client-routes.cjs');
 const {
   configFromEnvironment,
   createSelfHostedServer,
@@ -20,6 +26,7 @@ const DEFAULT_DATA_DIRECTORY = '.data';
 const DEFAULT_CONFIG_FILE = 'config/self-hosted.json';
 const DEFAULT_WORKER_INTERVAL_MS = 1_000;
 const MAX_TIMER_MS = 2_147_483_647;
+const CLIENT_TEMPLATE_SOURCES = new Set(['broadcasterId', 'eventId', 'occurredAt', 'source']);
 const SERVER_SECRET_NAMES = Object.freeze([
   'ADMIN_PASSWORD_HASH',
   'ADMIN_SESSION_SECRET',
@@ -49,7 +56,7 @@ async function createSelfHostedRuntime({
   if (preparedEnvironment.ADMIN_COOKIE_SECURE === undefined && isLoopbackHost(configuredHost)) {
     preparedEnvironment.ADMIN_COOKIE_SECURE = '0';
   }
-  preflightServerEnvironment(preparedEnvironment);
+  const serverPreflightConfig = preflightServerEnvironment(preparedEnvironment);
   const config = runtimeConfig
     ? normalizeRuntimeConfig(runtimeConfig)
     : loadRuntimeConfig(path.resolve(
@@ -63,7 +70,20 @@ async function createSelfHostedRuntime({
     'SELF_HOSTED_WORKER_INTERVAL_MS',
   );
   const databaseFile = resolveDatabaseFilename(dataDirectory, environment.SELF_HOSTED_DATABASE);
-  const delivery = readOnly ? createLocalInboxDelivery() : createDelivery({ environment, fetchImpl });
+  const clientActive = config.client.enabled && !readOnly;
+  const deliveryMode = String(environment.DELIVERY_MODE || 'local-inbox').trim().toLowerCase();
+  if (clientActive && deliveryMode !== 'wechat-subscribe') {
+    throw new Error('client.enabled requires DELIVERY_MODE=wechat-subscribe');
+  }
+  const clientEnvironment = clientActive ? resolveClientEnvironment(environment) : null;
+  const clientDatabaseFile = clientActive
+    ? resolveDatabaseFilename(
+      dataDirectory,
+      environment.SELF_HOSTED_CLIENT_DATABASE,
+      'client-portal.sqlite',
+      'SELF_HOSTED_CLIENT_DATABASE',
+    )
+    : null;
   const preparedSources = (readOnly ? [] : config.statusSources).map((definition) => ({
     definition,
     source: createHttpJsonStatusSource({
@@ -78,10 +98,41 @@ async function createSelfHostedRuntime({
       now: () => currentDate(now),
     }),
   }));
+  await assertPortAvailable(serverPreflightConfig.host, serverPreflightConfig.port);
   prepareDataDirectory(dataDirectory, { readOnly });
-  preflightStoredSecrets({ environment: preparedEnvironment, dataDirectory, readOnly });
-  const store = createSqliteStore({ filename: databaseFile, readOnly });
-  const core = createReminderCore({ store, delivery, clock: now, policy: config.policy, readOnly });
+  const runtimeLock = readOnly ? null : acquireRuntimeLock(dataDirectory);
+  let clientStore;
+  let core;
+  let delivery;
+  try {
+    preflightStoredSecrets({ environment: preparedEnvironment, dataDirectory, readOnly });
+    clientStore = clientActive
+      ? createSqliteClientStore({
+        filename: clientDatabaseFile,
+        identitySecret: clientEnvironment.identitySecret,
+        sessionTtlMs: config.client.sessionTtlMs,
+        maxSessionsPerIdentity: config.client.maxSessionsPerIdentity,
+        now: () => currentDate(now).getTime(),
+      })
+      : null;
+    if (clientStore) clientStore.verifyTemplateBinding(clientEnvironment.templateId);
+    delivery = readOnly
+      ? createLocalInboxDelivery()
+      : createDelivery({
+        environment,
+        fetchImpl,
+        clientStore,
+        clientEnvironment,
+        clientConfig: config.client,
+        clock: now,
+      });
+    const store = createSqliteStore({ filename: databaseFile, readOnly });
+    core = createReminderCore({ store, delivery, clock: now, policy: config.policy, readOnly });
+  } catch (error) {
+    clientStore?.close();
+    runtimeLock?.release();
+    throw error;
+  }
 
   let workerPromise = null;
   async function workerOnce() {
@@ -105,6 +156,36 @@ async function createSelfHostedRuntime({
     secrets = resolveLocalSecrets({ environment: preparedEnvironment, dataDirectory, allowCreate: !readOnly });
     const effectiveEnvironment = { ...preparedEnvironment, ...secrets.environment };
     serverConfig = configFromEnvironment(effectiveEnvironment);
+    let clientRequestHandler;
+    if (clientActive) {
+      const identity = createWechatMiniProgramIdentity({
+        appId: clientEnvironment.appId,
+        appSecret: clientEnvironment.appSecret,
+        fetchImpl,
+        timeoutMs: clientEnvironment.timeoutMs,
+      });
+      const publicChannels = config.channels
+        .filter(channel => channel.enabled)
+        .map(channel => ({
+          channelId: channel.id,
+          broadcasterId: channel.id,
+          name: channel.displayName,
+          sourceLabel: channel.platform,
+          description: channel.description,
+          staleAfterMs: channel.staleAfterMs,
+        }));
+      const portal = createClientPortal({
+        core,
+        identity,
+        store: clientStore,
+        publicChannels,
+        templateId: clientEnvironment.templateId,
+        grantIntentTtlMs: config.client.grantIntentTtlMs,
+        maxCredits: config.client.maxCredits,
+        now: () => currentDate(now).getTime(),
+      });
+      clientRequestHandler = createClientRequestHandler({ portal });
+    }
     schedulers = preparedSources.map(({ definition, source }) => {
       return createPollScheduler({
         broadcasterId: definition.broadcasterId,
@@ -118,9 +199,16 @@ async function createSelfHostedRuntime({
         },
       });
     });
-    server = createSelfHostedServer({ staticDir, core, config: serverConfig });
+    server = createSelfHostedServer({
+      staticDir,
+      core,
+      config: serverConfig,
+      clientRequestHandler,
+    });
   } catch (error) {
     await core.close();
+    clientStore?.close();
+    runtimeLock?.release();
     throw error;
   }
   let workerHandle;
@@ -163,11 +251,15 @@ async function createSelfHostedRuntime({
     }
     await workerPromise?.catch(() => {});
     await core.close();
+    clientStore?.close();
+    runtimeLock?.release();
     started = false;
   }
 
   return Object.freeze({
     config,
+    clientDatabaseFile,
+    clientEnabled: clientActive,
     core,
     databaseFile,
     delivery,
@@ -180,10 +272,39 @@ async function createSelfHostedRuntime({
   });
 }
 
-function createDelivery({ environment, fetchImpl }) {
+function createDelivery({
+  environment,
+  fetchImpl,
+  clientStore,
+  clientEnvironment,
+  clientConfig,
+  clock,
+}) {
   const mode = String(environment.DELIVERY_MODE || 'local-inbox').trim().toLowerCase();
   if (mode === 'local-inbox') return createLocalInboxDelivery();
-  if (mode !== 'webhook') throw new Error('DELIVERY_MODE must be local-inbox or webhook');
+  if (mode === 'wechat-subscribe') {
+    if (!clientStore || !clientEnvironment || !clientConfig || !clientConfig.template) {
+      throw new Error('DELIVERY_MODE=wechat-subscribe requires client.enabled and complete WeChat client configuration');
+    }
+    return createWechatSubscribeDelivery({
+      appId: clientEnvironment.appId,
+      appSecret: clientEnvironment.appSecret,
+      template: {
+        id: clientEnvironment.templateId,
+        ...clientConfig.template,
+      },
+      resolveOpenId: recipientId => clientStore.resolveProviderSubject({
+        provider: 'wechat-mini-program',
+        recipientId,
+      }),
+      fetchImpl,
+      timeoutMs: clientEnvironment.timeoutMs,
+      clock,
+    });
+  }
+  if (mode !== 'webhook') {
+    throw new Error('DELIVERY_MODE must be local-inbox, webhook, or wechat-subscribe');
+  }
   const headers = {};
   if (environment.DELIVERY_WEBHOOK_BEARER_TOKEN) {
     headers.authorization = `Bearer ${environment.DELIVERY_WEBHOOK_BEARER_TOKEN}`;
@@ -195,6 +316,34 @@ function createDelivery({ environment, fetchImpl }) {
     headers,
     fetchImpl,
   });
+}
+
+function resolveClientEnvironment(environment) {
+  const appId = requireClientEnvironmentSecret(environment, 'WECHAT_MINIPROGRAM_APP_ID', 128);
+  const appSecret = requireClientEnvironmentSecret(environment, 'WECHAT_MINIPROGRAM_APP_SECRET', 256);
+  const templateId = requireClientEnvironmentSecret(environment, 'WECHAT_MINIPROGRAM_TEMPLATE_ID', 256);
+  const identitySecret = requireClientEnvironmentSecret(environment, 'CLIENT_IDENTITY_SECRET', 1_024);
+  if (identitySecret.length < 32) throw new Error('CLIENT_IDENTITY_SECRET must be at least 32 characters');
+  return Object.freeze({
+    appId,
+    appSecret,
+    templateId,
+    identitySecret,
+    timeoutMs: boundedInteger(
+      Number(environment.WECHAT_API_TIMEOUT_MS || 5_000),
+      1,
+      MAX_TIMER_MS,
+      'WECHAT_API_TIMEOUT_MS',
+    ),
+  });
+}
+
+function requireClientEnvironmentSecret(environment, name, maximumLength) {
+  const value = String(environment[name] || '').trim();
+  if (!value) throw new Error(`missing client environment variable: ${name}`);
+  if (value.length > maximumLength) throw new Error(`${name} must be at most ${maximumLength} characters`);
+  if (/\r|\n/.test(value)) throw new Error(`${name} must be a single line`);
+  return value;
 }
 
 function createScheduledObservationHandler({ core, workerOnce, onWorkerError = () => {} }) {
@@ -226,12 +375,15 @@ function loadRuntimeConfig(filename) {
 
 function normalizeRuntimeConfig(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('self-hosted config must be an object');
-  rejectUnknownKeys(input, ['policy', 'recipients', 'statusSources', 'workerBatchSize'], 'self-hosted config');
+  rejectUnknownKeys(input, ['policy', 'recipients', 'statusSources', 'workerBatchSize', 'client', 'channels'], 'self-hosted config');
   if (Object.hasOwn(input, 'recipients') && !Array.isArray(input.recipients)) {
     throw new Error('recipients must be an array');
   }
   if (Object.hasOwn(input, 'statusSources') && !Array.isArray(input.statusSources)) {
     throw new Error('statusSources must be an array');
+  }
+  if (Object.hasOwn(input, 'channels') && !Array.isArray(input.channels)) {
+    throw new Error('channels must be an array');
   }
   if (Object.hasOwn(input, 'policy') && (!input.policy || typeof input.policy !== 'object' || Array.isArray(input.policy))) {
     throw new Error('policy must be an object');
@@ -239,22 +391,138 @@ function normalizeRuntimeConfig(input) {
   if (input.policy) {
     rejectUnknownKeys(
       input.policy,
-      ['creditCost', 'defaultDeliveryLimit', 'maxObservationFutureSkewMs'],
+      [
+        'creditCost',
+        'defaultDeliveryLimit',
+        'deliveryConcurrency',
+        'deliveryDeadlineMs',
+        'deliveryRetryDelayMs',
+        'maxObservationFutureSkewMs',
+      ],
       'policy',
     );
   }
   const recipients = (input.recipients || []).map(normalizeRecipient);
   const statusSources = (input.statusSources || []).map(normalizeStatusSource);
+  const client = normalizeClientConfig(input.client);
+  const channels = (input.channels || []).map(normalizePublicChannel)
+    .sort((left, right) => left.sort - right.sort || left.id.localeCompare(right.id));
   if (recipients.length > 100_000) throw new Error('self-hosted config supports at most 100000 recipients');
   if (statusSources.length > 1_000) throw new Error('self-hosted config supports at most 1000 status sources');
+  if (channels.length > 1_000) throw new Error('self-hosted config supports at most 1000 public channels');
   rejectDuplicateValues(recipients.map((item) => item.id), 'recipient id');
   rejectDuplicateValues(statusSources.map((item) => item.id), 'status source id');
   rejectDuplicateValues(statusSources.map((item) => item.broadcasterId), 'broadcaster status source');
+  rejectDuplicateValues(channels.map((item) => item.id), 'public channel id');
   return Object.freeze({
     policy: input.policy ? { ...input.policy } : {},
     recipients,
     statusSources,
+    client,
+    channels,
     workerBatchSize: boundedInteger(input.workerBatchSize === undefined ? 100 : input.workerBatchSize, 1, 1_000, 'workerBatchSize'),
+  });
+}
+
+function normalizeClientConfig(value) {
+  if (value === undefined) {
+    return Object.freeze({
+      enabled: false,
+      sessionTtlMs: 2_592_000_000,
+      maxSessionsPerIdentity: 5,
+      grantIntentTtlMs: 300_000,
+      maxCredits: 200,
+      template: null,
+    });
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('client must be an object');
+  rejectUnknownKeys(
+    value,
+    ['enabled', 'sessionTtlMs', 'maxSessionsPerIdentity', 'grantIntentTtlMs', 'maxCredits', 'template'],
+    'client',
+  );
+  if (value.enabled !== undefined && typeof value.enabled !== 'boolean') {
+    throw new Error('client.enabled must be a boolean');
+  }
+  const enabled = value.enabled === true;
+  if (enabled && value.template === undefined) throw new Error('client.template is required when client.enabled is true');
+  return Object.freeze({
+    enabled,
+    sessionTtlMs: optionalBoundedInteger(value.sessionTtlMs, 2_592_000_000, 60_000, 7_776_000_000, 'client.sessionTtlMs'),
+    maxSessionsPerIdentity: optionalBoundedInteger(value.maxSessionsPerIdentity, 5, 1, 20, 'client.maxSessionsPerIdentity'),
+    grantIntentTtlMs: optionalBoundedInteger(value.grantIntentTtlMs, 300_000, 30_000, 900_000, 'client.grantIntentTtlMs'),
+    maxCredits: optionalBoundedInteger(value.maxCredits, 200, 1, 10_000, 'client.maxCredits'),
+    template: value.template === undefined ? null : normalizeClientTemplate(value.template),
+  });
+}
+
+function normalizeClientTemplate(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('client.template must be an object');
+  rejectUnknownKeys(value, ['page', 'state', 'language', 'fields'], 'client.template');
+  const page = boundedString(value.page, 256, 'client.template.page');
+  if (page.startsWith('/') || page.includes('..') || /:\/\//.test(page)) {
+    throw new Error('client.template.page must be a relative mini-program page');
+  }
+  const state = value.state === undefined ? 'formal' : String(value.state);
+  if (!['developer', 'trial', 'formal'].includes(state)) {
+    throw new Error('client.template.state must be developer, trial, or formal');
+  }
+  const language = value.language === undefined ? 'zh_CN' : String(value.language);
+  if (!['zh_CN', 'en_US', 'zh_HK', 'zh_TW'].includes(language)) {
+    throw new Error('client.template.language is not supported');
+  }
+  if (!value.fields || typeof value.fields !== 'object' || Array.isArray(value.fields)) {
+    throw new Error('client.template.fields must be an object');
+  }
+  const entries = Object.entries(value.fields);
+  if (entries.length < 1 || entries.length > 10) throw new Error('client.template.fields must contain 1 to 10 fields');
+  const fields = {};
+  for (const [key, definition] of entries) {
+    if (!/^[a-z][a-z0-9_]{0,31}$/i.test(key)) throw new Error(`client.template field key is invalid: ${key}`);
+    if (!definition || typeof definition !== 'object' || Array.isArray(definition)) {
+      throw new Error(`client.template.fields.${key} must be an object`);
+    }
+    rejectUnknownKeys(definition, ['source', 'maxLength'], `client.template.fields.${key}`);
+    const source = String(definition.source || '');
+    if (!CLIENT_TEMPLATE_SOURCES.has(source)) {
+      throw new Error(`client.template.fields.${key}.source is not supported`);
+    }
+    fields[key] = Object.freeze({
+      source,
+      maxLength: optionalBoundedInteger(
+        definition.maxLength,
+        100,
+        1,
+        200,
+        `client.template.fields.${key}.maxLength`,
+      ),
+    });
+  }
+  return Object.freeze({ page, state, language, fields: Object.freeze(fields) });
+}
+
+function normalizePublicChannel(value, index) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`channels[${index}] must be an object`);
+  rejectUnknownKeys(
+    value,
+    ['id', 'displayName', 'platform', 'description', 'enabled', 'sort', 'staleAfterMs'],
+    `channels[${index}]`,
+  );
+  if (value.enabled !== undefined && typeof value.enabled !== 'boolean') {
+    throw new Error(`channels[${index}].enabled must be a boolean`);
+  }
+  const id = boundedString(value.id, 200, `channels[${index}].id`);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id)) {
+    throw new Error(`channels[${index}].id must be URL-path safe`);
+  }
+  return Object.freeze({
+    id,
+    displayName: boundedString(value.displayName, 100, `channels[${index}].displayName`),
+    platform: value.platform === undefined ? '' : boundedString(value.platform, 80, `channels[${index}].platform`),
+    description: value.description === undefined ? '' : boundedString(value.description, 300, `channels[${index}].description`),
+    enabled: value.enabled === undefined ? true : value.enabled,
+    sort: optionalBoundedInteger(value.sort, index, -10_000, 10_000, `channels[${index}].sort`),
+    staleAfterMs: optionalBoundedInteger(value.staleAfterMs, 360_000, 10_000, MAX_TIMER_MS, `channels[${index}].staleAfterMs`),
   });
 }
 
@@ -393,6 +661,107 @@ function protectPath(target, mode) {
   if (process.platform !== 'win32') fs.chmodSync(target, mode);
 }
 
+async function assertPortAvailable(host, port) {
+  const probe = net.createServer();
+  await new Promise((resolve, reject) => {
+    const rejectUnavailable = (cause) => {
+      const error = new Error(`self-hosted listener ${host}:${port} is unavailable: ${safeMessage(cause)}`);
+      error.code = cause && cause.code;
+      reject(error);
+    };
+    probe.once('error', rejectUnavailable);
+    probe.listen(port, host, () => {
+      probe.off('error', rejectUnavailable);
+      probe.close((error) => error ? rejectUnavailable(error) : resolve());
+    });
+  });
+}
+
+function acquireRuntimeLock(dataDirectory) {
+  const filename = path.join(dataDirectory, 'runtime.lock');
+  const token = crypto.randomBytes(24).toString('base64url');
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let descriptor;
+    try {
+      descriptor = fs.openSync(filename, 'wx', 0o600);
+      fs.writeFileSync(descriptor, JSON.stringify({
+        pid: process.pid,
+        token,
+        startedAt: new Date().toISOString(),
+      }), { encoding: 'utf8' });
+      fs.fsyncSync(descriptor);
+      protectPath(filename, 0o600);
+      let released = false;
+      return Object.freeze({
+        release() {
+          if (released) return;
+          released = true;
+          try {
+            fs.closeSync(descriptor);
+          } finally {
+            try {
+              const current = JSON.parse(fs.readFileSync(filename, 'utf8'));
+              if (current && current.token === token) fs.unlinkSync(filename);
+            } catch {
+              // Never delete a lock whose ownership can no longer be proven.
+            }
+          }
+        },
+      });
+    } catch (error) {
+      if (descriptor !== undefined) {
+        try { fs.closeSync(descriptor); } catch {}
+      }
+      if (error && error.code === 'EEXIST') {
+        const owner = readRuntimeLockOwner(filename);
+        if (owner && isProcessAlive(owner.pid)) {
+          const conflict = new Error(`another writable runtime already owns ${dataDirectory}`);
+          conflict.code = 'RUNTIME_ALREADY_ACTIVE';
+          throw conflict;
+        }
+        if (!owner) {
+          const invalid = new Error(`runtime lock is invalid; verify no process is using ${dataDirectory} before removing ${filename}`);
+          invalid.code = 'RUNTIME_LOCK_INVALID';
+          throw invalid;
+        }
+        try {
+          fs.unlinkSync(filename);
+        } catch (unlinkError) {
+          const conflict = new Error(`runtime lock could not be reclaimed: ${safeMessage(unlinkError)}`);
+          conflict.code = 'RUNTIME_ALREADY_ACTIVE';
+          throw conflict;
+        }
+        continue;
+      }
+      throw error;
+    }
+  }
+  const error = new Error(`unable to acquire runtime lock for ${dataDirectory}`);
+  error.code = 'RUNTIME_ALREADY_ACTIVE';
+  throw error;
+}
+
+function readRuntimeLockOwner(filename) {
+  try {
+    const stat = fs.lstatSync(filename);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 4_096) return null;
+    const value = JSON.parse(fs.readFileSync(filename, 'utf8'));
+    if (!value || !Number.isSafeInteger(value.pid) || value.pid < 1 || typeof value.token !== 'string') return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+function isProcessAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return Boolean(error && error.code === 'EPERM');
+  }
+}
+
 function preflightServerEnvironment(environment) {
   const supplied = SERVER_SECRET_NAMES.filter((name) => String(environment[name] || '').trim() !== '');
   if (supplied.length > 0 && supplied.length !== SERVER_SECRET_NAMES.length) {
@@ -461,10 +830,15 @@ function rejectUnknownKeys(value, allowedKeys, name) {
   if (unknown) throw new Error(`${name} contains unknown field: ${unknown}`);
 }
 
-function resolveDatabaseFilename(dataDirectory, configuredValue) {
-  const filename = String(configuredValue || 'live-reminder.sqlite').trim();
+function resolveDatabaseFilename(
+  dataDirectory,
+  configuredValue,
+  fallback = 'live-reminder.sqlite',
+  environmentName = 'SELF_HOSTED_DATABASE',
+) {
+  const filename = String(configuredValue || fallback).trim();
   if (!filename || path.isAbsolute(filename) || path.basename(filename) !== filename || filename === '.' || filename === '..') {
-    throw new Error('SELF_HOSTED_DATABASE must be a filename inside SELF_HOSTED_DATA_DIR');
+    throw new Error(`${environmentName} must be a filename inside SELF_HOSTED_DATA_DIR`);
   }
   return path.join(dataDirectory, filename);
 }

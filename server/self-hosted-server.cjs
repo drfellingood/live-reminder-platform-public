@@ -359,11 +359,15 @@ function createSelfHostedServer({
   core,
   coreFactory,
   config,
+  clientRequestHandler,
   observationCommandFactory = defaultObservationCommandFactory
 } = {}) {
   validateSelfHostedConfig(config)
   if (typeof observationCommandFactory !== "function") {
     throw new Error("observationCommandFactory must be a function")
+  }
+  if (clientRequestHandler !== undefined && typeof clientRequestHandler !== "function") {
+    throw new Error("clientRequestHandler must be a function")
   }
   const resolvedCore = resolveCore({ core, coreFactory })
   const now = config && config.now || Date.now
@@ -472,6 +476,7 @@ function createSelfHostedServer({
   }
 
   const server = http.createServer((request, response) => {
+    if (clientRequestHandler && clientRequestHandler(request, response)) return
     let url
     try {
       url = new URL(request.url || "/", "http://localhost")

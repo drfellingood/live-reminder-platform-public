@@ -1,0 +1,48 @@
+.first-notice {
+  margin-top: 0;
+}
+
+.target-row {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  min-height: 150rpx;
+  padding: 24rpx;
+}
+
+.target-row + .target-row {
+  border-top: 1rpx solid #ececf0;
+}
+
+.target-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.target-heading {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.target-name {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.target-meta,
+.target-choice {
+  margin-top: 8rpx;
+  color: #6e6e73;
+  font-size: 23rpx;
+}
+
+.target-choice {
+  color: #007aff;
+  font-weight: 600;
+}

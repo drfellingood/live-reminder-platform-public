@@ -1,0 +1,80 @@
+.credit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 24rpx;
+  border-top: 1rpx solid #ececf0;
+}
+
+.credit-label {
+  color: #6e6e73;
+  font-size: 23rpx;
+}
+
+.credit-value {
+  margin-top: 4rpx;
+  font-size: 48rpx;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.add-button {
+  min-width: 244rpx;
+  min-height: 72rpx;
+  margin: 0;
+  padding: 0 22rpx;
+  color: #ffffff;
+  background: #007aff;
+  border-radius: 36rpx;
+  font-size: 25rpx;
+  font-weight: 650;
+  line-height: 72rpx;
+}
+
+.add-button[disabled] {
+  color: #8e8e93;
+  background: #e8e8ed;
+}
+
+.channel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.channel-card {
+  padding: 26rpx;
+}
+
+.channel-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.channel-name {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+  font-size: 31rpx;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channel-meta {
+  margin-top: 12rpx;
+  color: #6e6e73;
+  font-size: 23rpx;
+}
+
+.channel-hint {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  color: #55555b;
+  border-top: 1rpx solid #ececf0;
+  font-size: 23rpx;
+  line-height: 1.5;
+}

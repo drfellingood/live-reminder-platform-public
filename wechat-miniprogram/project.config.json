@@ -1,0 +1,14 @@
+{
+  "appid": "touristappid",
+  "projectname": "live-reminder-client-template",
+  "compileType": "miniprogram",
+  "libVersion": "3.7.12",
+  "miniprogramRoot": "./",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": true
+  }
+}

@@ -1,0 +1,66 @@
+<view class="page-shell">
+  <view class="card state-card" wx:if="{{viewState === 'loading'}}">
+    <view class="spinner" aria-hidden="true"></view>
+    <view class="state-title">{{t.loading}}</view>
+  </view>
+
+  <view class="card state-card" wx:elif="{{viewState === 'error' || viewState === 'unauthorized'}}">
+    <view class="state-symbol" aria-hidden="true">!</view>
+    <view class="state-title">{{errorTitle}}</view>
+    <view class="state-body">{{errorMessage}}</view>
+    <button class="inline-button" bindtap="onRetry">{{viewState === 'unauthorized' ? t.reauthenticate : t.retry}}</button>
+  </view>
+
+  <block wx:else>
+    <view class="section-label">{{t.remindersTitle}}</view>
+    <view class="card">
+      <view class="row">
+        <view class="row-main">
+          <view class="row-title">{{savingReminders ? t.saving : (remindersEnabled ? t.remindersOn : t.remindersOff)}}</view>
+          <view class="row-subtitle" wx:if="{{!remindersEnabled}}">{{t.remindersDisabledHint}}</view>
+        </view>
+        <switch
+          color="#34c759"
+          checked="{{remindersEnabled}}"
+          disabled="{{savingReminders}}"
+          bindchange="onReminderToggle"
+          aria-label="{{t.remindersTitle}}"
+        />
+      </view>
+      <view class="credit-row">
+        <view>
+          <view class="credit-label">{{t.reminderCredits}}</view>
+          <view class="credit-value">{{availableCredits}}</view>
+        </view>
+        <button
+          class="add-button"
+          disabled="{{grantState === 'saving'}}"
+          bindtap="onAddReminder"
+        >{{grantState === 'saving' ? t.grantInProgress : (grantState === 'pending-sync' ? t.retryGrantSync : t.addReminder)}}</button>
+      </view>
+    </view>
+
+    <view class="notice warning-notice" wx:if="{{grantState === 'pending-sync'}}">{{t.grantSyncPending}}</view>
+
+    <view class="notice">{{t.acceptedNotDisplayed}}</view>
+
+    <view class="section-label">{{t.monitorSection}}</view>
+    <view class="state-card card" wx:if="{{viewState === 'empty'}}">
+      <view class="state-symbol" aria-hidden="true">+</view>
+      <view class="state-title">{{t.noMonitoredTitle}}</view>
+      <view class="state-body">{{t.noMonitoredBody}}</view>
+    </view>
+
+    <view class="channel-list" wx:else>
+      <view class="card channel-card" wx:for="{{channels}}" wx:key="id">
+        <view class="channel-topline">
+          <view class="channel-name">{{item.displayName}}</view>
+          <view class="status-pill {{item.displayState}}">{{item.statusText}}</view>
+        </view>
+        <view class="channel-meta">{{t.sourceLabel}} · {{item.sourceLabel}}</view>
+        <view class="channel-meta">{{t.updatedAt}} · {{item.updatedAtLabel}}</view>
+        <view class="channel-hint">{{item.statusHint}}</view>
+      </view>
+    </view>
+  </block>
+</view>

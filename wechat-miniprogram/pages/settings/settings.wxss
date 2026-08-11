@@ -1,0 +1,49 @@
+.first-label {
+  margin-top: 0;
+}
+
+.language-row {
+  gap: 20rpx;
+}
+
+.language-control {
+  display: flex;
+  padding: 4rpx;
+  background: #ececf1;
+  border-radius: 18rpx;
+}
+
+.language-option {
+  min-width: 70rpx;
+  min-height: 58rpx;
+  margin: 0;
+  padding: 0 18rpx;
+  color: #6e6e73;
+  background: transparent;
+  border-radius: 14rpx;
+  font-size: 24rpx;
+  font-weight: 650;
+  line-height: 58rpx;
+}
+
+.language-option.selected {
+  color: #1d1d1f;
+  background: #ffffff;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.compact-state {
+  padding-top: 42rpx;
+  padding-bottom: 42rpx;
+}
+
+.connection-dot {
+  width: 18rpx;
+  height: 18rpx;
+  background: #34c759;
+  border-radius: 50%;
+}
+
+.account-delete-button {
+  margin-top: 18rpx;
+}
