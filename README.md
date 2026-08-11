@@ -6,7 +6,7 @@ A self-hosted app that watches a live status and requests one reminder for each 
 
 **One step only:** copy the entire box below and send it to an AI assistant, such as Doubao or DeepSeek. The project address is already included.
 
-**只需一步：**复制下面整个文本框，发给任意 AI 助手（例如豆包或 DeepSeek）。项目地址已经包含在里面，不需要另外发送。
+**只需一步：** 复制下面整个文本框，发给任意 AI 助手（例如豆包或 DeepSeek）。项目地址已经包含在里面，不需要另外发送。
 
 ```text
 Please help me set up this public project.
