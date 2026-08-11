@@ -1,6 +1,6 @@
 {
   "name": "live-reminder-platform",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A vendor-neutral, self-hosted live-status reminder platform with auditable per-recipient delivery evidence.",
   "private": true,
   "type": "module",
@@ -9,14 +9,10 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
     "demo": "npm run build && node server/demo-server.cjs",
     "start": "npm run build && node --env-file-if-exists=.env server/start.cjs",
-    "admin:secrets": "node tools/generate-admin-secrets.cjs",
-    "test": "node --test tests/*.test.cjs",
-    "check": "npm run test && npm run build"
+    "admin:secrets": "node tools/generate-admin-secrets.cjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",

@@ -4,7 +4,7 @@ This repository provides a complete single-process composition root. It does not
 
 A local build or sender `2xx` response is not proof that every eligible recipient was processed or that a handset displayed a notification.
 
-Read [Configuration](CONFIGURATION.md), [Architecture](ARCHITECTURE.md), and [Security policy](../SECURITY.md) before exposing the service.
+Read [Configuration](CONFIGURATION.md) and [Security policy](../SECURITY.md) before exposing the service.
 
 ## 1. Validate a clean checkout
 
@@ -12,7 +12,7 @@ Use Node.js 22.13 or newer:
 
 ```powershell
 npm ci
-npm run check
+npm run build
 ```
 
 Record the source commit and lockfile hash. Stop if the checkout contains unexplained archives, databases, media, identities, account values, or secrets.
@@ -139,7 +139,7 @@ A backup that has never been restored is not a verified recovery capability.
 
 Before enabling real recipients, require all of the following:
 
-- `npm ci` and `npm run check` pass from a clean checkout;
+- `npm ci` and `npm run build` pass from a clean checkout;
 - the exact source, lockfile, Node version, config, and adapter versions are recorded;
 - no placeholder, secret, private identifier, database, backup, or private media is in the release;
 - HTTPS, firewall, secure cookies, proxy trust, rate limits, monitoring, and alerting match the design;

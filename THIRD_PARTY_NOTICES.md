@@ -14,4 +14,6 @@ Exact resolved versions are recorded in `package-lock.json`. Transitive dependen
 
 The repository's `AGPL-3.0-only` license applies only to repository-owned source offered under that license. It does not replace, remove, or relicense third-party rights. Nothing in this notice grants trademark rights or overrides an upstream license.
 
+This release contains no project-owned photographs, raster artwork, audio, video, fonts, or copied brand assets. Interface icons are provided by the separately licensed `@tabler/icons-react` dependency above.
+
 This file is a practical inventory, not legal advice. If dependency declarations change, update this table and verify the new licenses before release.
