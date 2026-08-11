@@ -2,50 +2,54 @@
 
 A self-hosted app that watches a live status and requests one reminder for each subscribed user.
 
-> [!TIP]
-> **Don't know how to start? / 不知道怎么开始？**
->
-> Copy this public GitHub address and send it to an AI assistant, such as Doubao or DeepSeek. Some versions can open the link and some cannot, so use the prompt below to make the AI check first.
->
-> 把下面这个公开 GitHub 地址发给 AI 助手（例如豆包、DeepSeek 等）。不同版本的 AI 能力不同，请使用下方提示词，让 AI 先确认它能否打开链接。
->
-> `https://github.com/drfellingood/live-reminder-platform-public`
->
-> Share only this public address. Never send passwords, tokens, private URLs, database files, or real user data. Sign in and approve access yourself.
->
-> 只发送这个公开地址。不要发送密码、Token、私有网址、数据库文件或真实用户资料；登录和授权必须由你自己完成。
->
-> Product names are examples only; this project is not affiliated with these services. / 以上名称仅为举例，本项目与这些服务没有隶属或合作关系。
+## Ask AI to guide you / 让 AI 带你操作
 
-## Copy this prompt / 复制这段提示词
+**One step only:** copy the entire box below and send it to an AI assistant, such as Doubao or DeepSeek. The project address is already included.
 
-中文：
+**只需一步：**复制下面整个文本框，发给任意 AI 助手（例如豆包或 DeepSeek）。项目地址已经包含在里面，不需要另外发送。
 
 ```text
-请阅读这个公开 GitHub 项目：
+Please help me set up this public project.
+请帮我配置这个公开项目。
+
+Project / 项目地址：
 https://github.com/drfellingood/live-reminder-platform-public
 
-请先确认你能否打开并读取这个链接。如果不能，请让我复制公开的 README 给你，不要猜测项目内容。
-先问我使用 Windows、macOS 还是 Linux，以及我是想“运行演示”还是“正式自托管”。
-之后每次只给我一个步骤和一条命令，解释这一步的作用，等我回复运行结果后再继续。
-不要索要或让我上传密码、Token、私有网址、数据库文件、私有配置或真实用户资料。
-不要擅自删除文件、开放公网、修改防火墙或部署真实服务；需要登录或授权时，让我自己操作。
-演示成功不代表真实通知成功。正式上线前，请提醒我检查配置、备份、安全和端到端通知结果。
+Reply in the language I use.
+请使用我当前使用的语言回复。
+
+First confirm whether you can open and read the project link.
+先确认你能否打开并读取项目链接。
+
+If you cannot, ask me to paste the public README. Do not guess.
+如果不能，请让我粘贴公开的 README，不要猜测项目内容。
+
+Ask whether I use Windows, macOS, or Linux, and whether I want to
+run the demo or self-host the project for real use.
+先问我使用 Windows、macOS 还是 Linux，以及我想运行演示，
+还是正式自托管。
+
+Give me only one step and one command at a time. Explain the step,
+then wait for my result before continuing.
+每次只给我一个步骤和一条命令，解释作用，等我回复结果后再继续。
+
+Never ask me to share passwords, tokens, private URLs, database files,
+private configuration, or real user data.
+不要让我提供密码、Token、私有网址、数据库、私有配置或真实用户资料。
+
+Do not delete files, expose a service publicly, change firewall settings,
+or deploy a real service without my explicit approval. I will complete
+every sign-in and authorization step myself.
+未经我明确同意，不要删除文件、开放公网、修改防火墙或正式部署。
+所有登录和授权必须由我自己完成。
+
+A working demo is not proof of real notification delivery. Before real use,
+remind me to check configuration, backups, security, and end-to-end results.
+演示成功不代表真实通知成功。正式使用前，提醒我检查配置、备份、
+安全和端到端通知结果。
 ```
 
-English:
-
-```text
-Please read this public GitHub project:
-https://github.com/drfellingood/live-reminder-platform-public
-
-First confirm whether you can open and read the link. If you cannot, ask me to paste the public README instead of guessing.
-Ask whether I use Windows, macOS, or Linux, and whether I want to run the demo or self-host it for real use.
-Then give me only one step and one command at a time, explain what it does, and wait for my result before continuing.
-Never ask for passwords, tokens, private URLs, database files, private configuration, or real user data.
-Do not delete files, expose the service publicly, change firewall settings, or deploy a real service without my explicit approval. Let me handle every sign-in and authorization step.
-A successful demo is not proof of real notification delivery. Before real use, remind me to check configuration, backups, security, and end-to-end notification results.
-```
+Product names are examples only; this project is not affiliated with these services. / 以上名称仅为举例，本项目与这些服务没有隶属或合作关系。
 
 [中文说明](#中文说明)
 
