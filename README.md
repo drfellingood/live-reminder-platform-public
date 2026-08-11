@@ -1,59 +1,56 @@
 # Live Reminder Platform
 
-A vendor-neutral, self-hosted source release for monitoring live-status changes and sending one auditable reminder request per eligible recipient.
+A self-hosted app that watches a live status and requests one reminder for each subscribed user.
 
-This release includes no cloud account, messaging account, real recipient data, private endpoint, or mobile client. The local demo works immediately. Real reminders require an operator-owned HTTPS status endpoint, HTTPS delivery webhook, server, and credentials.
+[中文说明](#中文说明)
 
-## Download
+> **Start here:** The demo works immediately. Real phone notifications do not. For real use, you must connect your own status API and notification service.
 
-Choose either method:
+## Try the demo in 3 steps
 
-1. Open the repository on GitHub, select **Code → Download ZIP**, extract it, and open a terminal in the extracted folder; or
-2. clone it with Git:
+### 1. Install Node.js
+
+Install [Node.js 22.13 or newer](https://nodejs.org/en/download). npm is included with Node.js.
+
+### 2. Download this project
+
+[Download version 1.0.2](https://github.com/drfellingood/live-reminder-platform-public/archive/refs/tags/v1.0.2.zip), extract it, and open a terminal in the extracted folder.
+
+You can also use Git:
 
 ```powershell
 git clone https://github.com/drfellingood/live-reminder-platform-public.git
 cd live-reminder-platform-public
 ```
 
-## Requirements
-
-- Node.js 22.13 or newer.
-- npm 10 or newer.
-
-Confirm the installed versions:
-
-```powershell
-node --version
-npm --version
-```
-
-## Five-minute local demo
-
-Install the locked dependencies and start the isolated demo:
+### 3. Start the demo
 
 ```powershell
 npm ci
 npm run demo
 ```
 
-The terminal prints `http://127.0.0.1:8788/admin` and a temporary password. Open that address and sign in. Demo records are fictional, remain in memory, and never poll an external status source or send a real notification. Press `Ctrl+C` in the terminal to stop it.
+If Windows PowerShell blocks `npm`, use `npm.cmd` instead.
 
-## Start the self-hosted runtime locally
+The terminal shows:
 
-After `npm ci`, run:
+- an address: `http://127.0.0.1:8788/admin`
+- a temporary password
 
-```powershell
-npm start
-```
+Open the address and enter the password. The demo uses fictional data and never sends a real notification. Press `Ctrl+C` to stop it.
 
-The first loopback-only start creates `.data/live-reminder.sqlite` and `.data/local-secrets.json`, then prints the administrator password once. Save that password immediately and open `http://127.0.0.1:8787/admin`.
+## Use it for real
 
-Without private configuration, the runtime has no recipients or status sources and uses a process-memory local inbox. It cannot notify a phone.
+This is technical setup, not a no-code step. Ask a developer or server administrator for help if you do not already operate the services below.
 
-## Configure real detection and delivery
+You need both of these before real reminders can work:
 
-Copy the supplied examples to the ignored private paths.
+1. an HTTPS status URL that returns JSON such as `{"status":"live"}`;
+2. an HTTPS notification webhook that sends the reminder to your users.
+
+This repository does not include either service or a mobile app.
+
+Copy the example settings:
 
 Windows PowerShell:
 
@@ -71,81 +68,89 @@ cp config/self-hosted.example.json config/self-hosted.json
 
 Then:
 
-1. Put authorised recipient identifiers, subscriptions, and your HTTPS status endpoint in `config/self-hosted.json`.
-2. For real delivery, set `DELIVERY_MODE=webhook` and provide your HTTPS webhook settings in `.env`.
-3. Keep all tokens and generated secrets outside JSON and outside Git.
-4. Run `npm start`, sign in to `/admin`, and verify status, denominator, receipt, failure, ambiguous, restart, and backup behaviour before enabling real recipients.
+1. Add your channels, users, subscriptions, and status URL to `config/self-hosted.json`.
+2. In `.env`, set `DELIVERY_MODE=webhook` and add your `DELIVERY_WEBHOOK_URL`.
+3. Run `npm ci`, then `npm start`.
+4. Save the password shown in the terminal and open `http://127.0.0.1:8787/admin`.
 
-The status endpoint must return exactly one supported state:
+For the first check, make the status URL return `{"status":"offline"}` and confirm it in the dashboard. Then change it to `{"status":"live"}`. By default, detection can take one 120-second polling cycle plus a 10-second confirmation.
 
-```json
-{ "status": "live" }
-```
+Keep passwords, tokens, private URLs, databases, and real user data out of Git.
 
-Allowed values are `live`, `offline`, and `unknown`. Network, timeout, parsing, redirect, or security-challenge failures become `unknown`; uncertainty is never converted to `offline`.
+## Important limits
 
-The delivery webhook receives one request per eligible recipient with a deterministic `Idempotency-Key`. A sender `2xx` response means only that the sender accepted responsibility for the request. It does not prove that a handset displayed a notification.
+- A webhook response saying “accepted” does not prove that a phone displayed the notification.
+- A network or parsing error remains `unknown`; the app does not pretend the channel is offline.
+- The included SQLite setup is for one running app process.
 
-Follow these guides before using real data or exposing the server:
+Before using real users or opening the server to the internet, read:
 
-- [Configuration and integration contracts](docs/CONFIGURATION.md)
-- [Deployment, backup, recovery, and upgrades](docs/DEPLOYMENT.md)
-- [Admin dashboard and troubleshooting](docs/ADMIN_DASHBOARD.md)
+- [Configuration](docs/CONFIGURATION.md)
+- [Deployment and backups](docs/DEPLOYMENT.md)
+- [Admin dashboard help](docs/ADMIN_DASHBOARD.md)
 - [Security policy](SECURITY.md)
 
-## Build check
+## Update safely
 
-To confirm that the downloaded source compiles on the current machine:
-
-```powershell
-npm run build
-```
-
-A successful build proves only that this checkout compiled. It does not prove a deployment is healthy or that a phone displayed a notification.
-
-## Updating
-
-Before changing versions, stop the process and back up the closed SQLite database, `.data/local-secrets.json` or externally managed secrets, `.env`, and private JSON configuration. Install the new source in a clean folder, run `npm ci` and `npm run build`, read the deployment notes, then connect a disposable restored copy in read-only mode before replacing a running instance. Never overwrite the only database or secret copy.
+Stop the app and back up the database, `.env`, private configuration, and secrets before updating. Follow the [deployment guide](docs/DEPLOYMENT.md) before replacing a running version.
 
 ## License
 
-Repository-owned source is licensed under `AGPL-3.0-only`. Network operators who modify and deploy it must preserve the corresponding-source obligations of that license. Dependencies retain their own licenses; see [Third-party notices](THIRD_PARTY_NOTICES.md).
+Project source is licensed under `AGPL-3.0-only`. Dependencies keep their own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ---
 
-## 中文使用说明
+## 中文说明
 
-这是一个厂商中立、可自行托管的直播状态提醒源码版本。它不附带任何云账号、消息账号、真实用户、私有接口或手机端。虚构演示可以直接运行；如果要发送真实提醒，使用者必须接入自己有权使用的 HTTPS 状态接口、HTTPS 通知 webhook、服务器和密钥。
+这是一个需要自行托管的直播状态提醒源码项目，不是手机安装包。
 
-### 1. 下载
+> **先看这里：** 演示版下载后可以直接运行。要给真实用户发送手机提醒，还必须接入你自己的状态接口和通知服务。
 
-可以在 GitHub 页面点击 **Code → Download ZIP**，解压后在该文件夹打开终端；也可以运行：
+## 3 步运行演示
+
+### 1. 安装 Node.js
+
+安装 [Node.js 22.13 或更高版本](https://nodejs.org/en/download)。npm 会一起安装。
+
+### 2. 下载项目
+
+[点击下载 1.0.2 版本](https://github.com/drfellingood/live-reminder-platform-public/archive/refs/tags/v1.0.2.zip)，解压后在该文件夹打开终端。
+
+也可以使用 Git：
 
 ```powershell
 git clone https://github.com/drfellingood/live-reminder-platform-public.git
 cd live-reminder-platform-public
 ```
 
-需要 Node.js 22.13 或更高版本、npm 10 或更高版本。
-
-### 2. 先运行安全演示
+### 3. 启动演示
 
 ```powershell
 npm ci
 npm run demo
 ```
 
-终端会显示 `http://127.0.0.1:8788/admin` 和临时密码。演示只使用虚构内存数据，不连接状态接口，也不发送真实通知。按 `Ctrl+C` 停止。
+如果 Windows PowerShell 不允许运行 `npm`，请改用 `npm.cmd`。
 
-### 3. 启动本机自托管版本
+终端会显示：
 
-```powershell
-npm start
-```
+- 后台地址：`http://127.0.0.1:8788/admin`
+- 一个临时密码
 
-首次启动会生成 `.data/live-reminder.sqlite`、本机密钥，并只显示一次后台密码。请立即保存密码，然后打开 `http://127.0.0.1:8787/admin`。没有私有配置时，系统没有接收者和状态来源，只使用内存收件箱，不能通知手机。
+打开地址并输入密码即可。演示只使用虚构数据，不会发送真实通知。按 `Ctrl+C` 停止。
 
-### 4. 接入真实状态和通知
+## 正式使用
+
+下面不是“无代码”操作。如果你还没有自己的接口和服务器，请让开发或运维人员协助。
+
+你必须先准备好：
+
+1. 一个 HTTPS 状态接口，返回 `{"status":"live"}` 这样的 JSON；
+2. 一个 HTTPS 通知 webhook，负责把提醒发送给你的用户。
+
+这个仓库不附带这两个服务，也不附带手机 App。
+
+复制示例配置：
 
 Windows PowerShell：
 
@@ -161,15 +166,34 @@ cp server/self-hosted.env.example .env
 cp config/self-hosted.example.json config/self-hosted.json
 ```
 
-在 `config/self-hosted.json` 填写自己有权使用的接收者、订阅关系和 HTTPS 状态接口；在 `.env` 把发送方式设为 `webhook`，并填写自己的 HTTPS 通知端配置。密钥和 token 不得写进 Git。
+然后：
 
-状态接口只能返回 `live`、`offline` 或 `unknown`。网络错误必须保持 `unknown`，不能假装成下播。发送端返回 `2xx` 只代表它接受了请求，不代表手机一定显示了通知。
+1. 在 `config/self-hosted.json` 填写主播、用户、订阅关系和状态接口。
+2. 在 `.env` 设置 `DELIVERY_MODE=webhook`，并填写 `DELIVERY_WEBHOOK_URL`。
+3. 运行 `npm ci`，再运行 `npm start`。
+4. 保存终端显示的后台密码，再打开 `http://127.0.0.1:8787/admin`。
 
-真实使用前请阅读：
+第一次测试时，先让状态接口返回 `{"status":"offline"}` 并在后台确认；再改为 `{"status":"live"}`。默认检测最多可能需要一个 120 秒轮询周期，再加 10 秒复核。
 
-- [配置与接口说明](docs/CONFIGURATION.md)
-- [部署、备份、恢复和升级](docs/DEPLOYMENT.md)
-- [后台与故障排查](docs/ADMIN_DASHBOARD.md)
-- [安全策略](SECURITY.md)
+密码、token、私有网址、数据库和真实用户资料都不能上传到 Git。
 
-更新版本前必须停止程序并备份数据库、密钥、`.env` 和私有 JSON。先在新目录执行 `npm ci` 与 `npm run build`，使用只读恢复副本验证后，再替换正在运行的版本。
+## 重要限制
+
+- 通知服务返回“已接受”，不等于手机一定显示了通知。
+- 网络或解析错误会保持为 `unknown`，不会被假装成下播。
+- 自带的 SQLite 版本只适合运行一个程序进程。
+
+接入真实用户或把服务开放到公网前，请阅读：
+
+- [配置说明](docs/CONFIGURATION.md)
+- [部署与备份](docs/DEPLOYMENT.md)
+- [后台使用与故障排查](docs/ADMIN_DASHBOARD.md)
+- [安全说明](SECURITY.md)
+
+## 安全更新
+
+更新前先停止程序，并备份数据库、`.env`、私有配置和密钥。替换正在运行的版本前，请按[部署说明](docs/DEPLOYMENT.md)操作。
+
+## 开源许可
+
+项目源码使用 `AGPL-3.0-only` 许可。第三方依赖保留各自许可，详见[第三方声明](THIRD_PARTY_NOTICES.md)。
