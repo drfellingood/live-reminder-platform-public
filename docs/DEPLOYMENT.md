@@ -133,7 +133,7 @@ For a loopback-only local instance, losing the first-run password requires a cre
 
 Do not delete the SQLite database. For a remote instance, generate and rotate explicit secrets through the deployment secret manager.
 
-## 8. Capacity boundary
+## 8. Capacity and scaling
 
 The reference SQLite store is deliberately single-process. The runtime creates an owner file named `runtime.lock` in the data directory and refuses a second writable process that targets the same directory. Do not remove the lock while a process may still be running. It serializes mutations and stores the complete domain state as JSON in one SQLite row. Delivery attempts use bounded in-process concurrency (8 by default); this is not a capacity or latency guarantee. Every event also stores a hard delivery deadline (120 seconds from server confirmation by default), so no new sender request starts after stale work expires and its reserved credit is refunded. A request that started before the deadline but has an uncertain outcome remains `ambiguous`. Before adding real users, measure the intended recipient/event volume, database growth, dashboard latency, worker latency, and restore time on the target hardware.
 
@@ -171,7 +171,7 @@ Before enabling real recipients, require all of the following:
 
 Any failed item stops promotion.
 
-## Acceptance boundary
+## Event checks
 
 A `terminal` event has finished processing and accounting, but it may still contain explicit failures. A system-level event passes only when its denominator is verifiable, receipt count matches, `failed = 0`, `accepted = denominator`, `ambiguous = 0`, `bookkeepingPending = 0`, counts are consistent, and timing is measured from a declared start point. Sender `accepted` still does not prove handset display; handset observations must be reported separately.
 

@@ -196,7 +196,7 @@ The provider result `accepted` means the WeChat API accepted the send request. I
 
 Each event has a persisted delivery deadline (120 seconds in the example), measured from the server's confirmation time rather than a source-provided timestamp. No new provider send starts at or after that deadline; expired work is refunded. Access-token failures may retry inside the deadline because no message was accepted. A send that started before the deadline but has an uncertain outcome remains `ambiguous` and is never blindly retried.
 
-## 7. Release boundary
+## 7. Release steps
 
 These are separate milestones:
 

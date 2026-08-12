@@ -1,6 +1,6 @@
 # Configuration
 
-This document describes the vendor-neutral self-hosted runtime. It is a configuration contract, not evidence that an environment has been deployed.
+This document explains the vendor-neutral self-hosted runtime and its supported settings.
 
 ## Runtime requirements
 
@@ -25,7 +25,7 @@ This mode is useful for local evaluation. The local inbox accepts into process m
 
 `server/start.cjs` reads these variables:
 
-| Variable | Required | Default | Boundary |
+| Variable | Required | Default | Notes |
 | --- | --- | --- | --- |
 | `SELF_HOSTED_HOST` | No | `127.0.0.1` | A non-loopback value is rejected unless remote exposure is explicitly enabled. |
 | `SELF_HOSTED_PORT` | No | `8787` | Integer from 1 through 65535. |
@@ -362,7 +362,7 @@ When `server/self-hosted-server.cjs` is run directly instead of through `server/
 
 ## Demo environment
 
-| Variable | Required | Default | Boundary |
+| Variable | Required | Default | Notes |
 | --- | --- | --- | --- |
 | `DEMO_PORT` | No | `8788` | The demo always binds to `127.0.0.1`. |
 | `DEMO_PASSWORD` | No | random temporary value | Optional for local automation; at least 12 characters. |

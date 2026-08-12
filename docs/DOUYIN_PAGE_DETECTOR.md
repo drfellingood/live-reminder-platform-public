@@ -45,11 +45,11 @@ This example verifies detection only: it deliberately keeps `client.enabled` off
 4. 在被忽略的 `.env` 中设置上面的 `STATUS_BROWSER_CDP_ENDPOINT`。
 5. 运行 `npm start` 并保持浏览器开启。出现验证页面时只能人工处理或停止监控，不要加入自动绕过功能。
 
-The repository deliberately does not include a browser profile, cookies, account values, target identity, or a command that weakens browser security. Keep the dedicated profile outside the repository (preferred) or under the ignored `.data/browser-profile/` directory. Ask an AI assistant to help with the exact browser-launch command for your operating system, but do not send it passwords, cookies, tokens, private browser files, or real user data.
+The repository does not include browser profiles, cookies, account values, target identities, or commands that weaken browser security. Keep the dedicated profile outside the repository (preferred) or under the ignored `.data/browser-profile/` directory. Never share passwords, cookies, tokens, private browser files, or real user data.
 
-仓库不会提供浏览器资料、Cookie、账号值、真实目标身份或削弱浏览器安全的启动命令。你可以让 AI 根据操作系统给出具体启动命令，但不要把密码、Cookie、Token、私有浏览器文件或真实用户数据发给 AI。
+仓库不提供浏览器资料、Cookie、账号值、真实目标身份或削弱浏览器安全的启动命令。请勿分享密码、Cookie、Token、私有浏览器文件或真实用户数据。
 
-## Security and reliability boundary / 安全与可靠性边界
+## Safe operation / 安全使用
 
 - Never expose, proxy, or tunnel the CDP port. Anyone who can reach it can control the signed-in browser.
 - Use a dedicated operating-system account or browser profile and restrict its files.

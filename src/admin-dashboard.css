@@ -58,9 +58,9 @@
 .flag { padding: 5px 8px; border-radius: 999px; color: #657184; background: #edf0f4; font-size: .68rem; font-weight: 700; }
 .flag--ok { color: #147449; background: #e8f7ef; }
 .flag--warn { color: #9b3d33; background: #fff0ed; }
-.evidence-banner { display: flex; gap: 13px; padding: 18px 20px; border: 1px solid #e2e8ee; border-radius: 18px; color: #49596b; background: #f8fafc; }
-.evidence-banner h2 { margin-bottom: 4px; font-size: .92rem; }
-.evidence-banner p { margin-bottom: 0; color: #6f7a8b; font-size: .8rem; line-height: 1.5; }
+.delivery-banner { display: flex; gap: 13px; padding: 18px 20px; border: 1px solid #e2e8ee; border-radius: 18px; color: #49596b; background: #f8fafc; }
+.delivery-banner h2 { margin-bottom: 4px; font-size: .92rem; }
+.delivery-banner p { margin-bottom: 0; color: #6f7a8b; font-size: .8rem; line-height: 1.5; }
 .dashboard-error { padding: 12px 14px; border-radius: 12px; color: #97382e; background: #fff0ed; }
 .empty-state { margin: 0; padding: 34px; border-radius: 15px; color: #788395; background: #f7f9fb; text-align: center; }
 

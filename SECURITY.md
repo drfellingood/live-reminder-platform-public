@@ -24,7 +24,7 @@ Include the affected commit, minimal reproduction steps, impact, and a redacted 
 
 Source files, fixtures, screenshots, issues, and pull requests must not contain data copied from a real deployment. Operators should collect only what the installation needs, restrict access, define retention and deletion rules, and follow the laws and service terms that apply to their deployment.
 
-## Network boundary
+## Network security
 
 The self-hosted server binds to loopback by default. Remote binding requires explicit opt-in, but that flag is not an authentication or encryption control. Put the service behind a maintained HTTPS reverse proxy, firewall the Node port, and keep secure cookies enabled.
 
@@ -61,9 +61,9 @@ The included SQLite adapter uses WAL mode and full synchronous writes, but it is
 
 Use a SQLite-aware online backup or stop the application cleanly before copying databases. Never copy only a main file while writes are active. When the Mini Program is enabled, treat `live-reminder.sqlite`, `client-portal.sqlite`, `CLIENT_IDENTITY_SECRET`, the matching local-secret file, and other external secret-manager material as one recovery set. Encrypt backups, restrict access, define retention, and routinely restore into an isolated path. Inspect a restored core copy first with `SELF_HOSTED_READ_ONLY=1`; client routes are disabled in that recovery mode. An untested backup is not a recovery capability.
 
-Use a dedicated data directory; the built-in runtime rejects the project root, filesystem root, and symbolic-link redirects as data targets. A new POSIX directory is created owner-only, while an existing POSIX directory must already be owner-only rather than being silently re-permissioned. On Windows, mode flags are not an ACL boundary: run under a dedicated account and explicitly restrict NTFS permissions on the data, config, environment, logs, and backups.
+Use a dedicated data directory; the built-in runtime rejects the project root, filesystem root, and symbolic-link redirects as data targets. A new POSIX directory is created owner-only, while an existing POSIX directory must already be owner-only rather than being silently re-permissioned. On Windows, mode flags do not configure ACLs: run under a dedicated account and explicitly restrict NTFS permissions on the data, config, environment, logs, and backups.
 
-## Delivery evidence
+## Delivery results
 
 An HTTP 2xx from the configured sender is recorded as `accepted`; it does not establish handset display. A request that may have started but lacks a definitive response is `ambiguous`, retains reserved accounting, and requires evidence before manual resolution. Do not replay ambiguous work with a new idempotency key merely to make a dashboard appear successful.
 

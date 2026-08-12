@@ -47,7 +47,7 @@
             </view>
             <view class="activity-kind">{{item.kindText}}</view>
             <view class="activity-time">{{item.timestampLabel}}</view>
-            <view class="activity-boundary" wx:if="{{item.kind === 'reminder'}}">{{item.handsetText}}</view>
+            <view class="activity-note" wx:if="{{item.kind === 'reminder'}}">{{item.handsetText}}</view>
           </view>
         </view>
       </block>

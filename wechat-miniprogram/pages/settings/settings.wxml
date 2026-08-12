@@ -94,7 +94,7 @@
     <button class="inline-button" bindtap="onRetry">{{viewState === 'unauthorized' ? t.reauthenticate : t.retry}}</button>
   </view>
 
-  <view class="card evidence-card">
+  <view class="card privacy-card">
     <view class="card-header">
       <view class="card-heading">
         <view class="card-title">{{t.securitySection}}</view>

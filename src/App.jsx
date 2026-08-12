@@ -28,12 +28,12 @@ const TEXT = Object.freeze({
     title: 'Reminder console',
     nav: { monitor: 'Monitor', channels: 'Channels', inbox: 'Inbox', activity: 'Activity', settings: 'Settings' },
     monitorTitle: 'Monitoring overview',
-    monitorIntro: 'A neutral preview of the status, event, and delivery evidence surfaces.',
+    monitorIntro: 'Preview status, events, and notification results.',
     sources: 'Sources monitored',
     liveNow: 'Live now',
     unresolved: 'Needs attention',
-    boundaryTitle: 'Evidence boundary',
-    boundaryText: 'Accepted means the configured delivery adapter accepted a request. Handset display remains unverified.',
+    noticeTitle: 'Notification status',
+    noticeText: 'Accepted means the configured delivery service accepted a request. Phone display is not confirmed.',
     channelsTitle: 'Channels',
     channelsIntro: 'Fictional identifiers demonstrate independent monitoring state.',
     status: 'Status',
@@ -65,12 +65,12 @@ const TEXT = Object.freeze({
     title: '提醒控制台',
     nav: { monitor: '监控', channels: '频道', inbox: '收件箱', activity: '活动', settings: '设置' },
     monitorTitle: '监控概览',
-    monitorIntro: '中立展示状态、事件与发送证据界面。',
+    monitorIntro: '查看状态、事件和通知结果示例。',
     sources: '监控来源',
     liveNow: '正在直播',
     unresolved: '需要处理',
-    boundaryTitle: '证据边界',
-    boundaryText: '“已接受”仅表示发送适配器接受了请求，手机是否展示仍未验证。',
+    noticeTitle: '通知状态',
+    noticeText: '“已接受”仅表示发送服务接受了请求，不代表手机已经展示通知。',
     channelsTitle: '频道',
     channelsIntro: '虚构标识用于展示各频道独立的监控状态。',
     status: '状态',
@@ -115,11 +115,11 @@ function MonitorPage({ copy }) {
         <Metric icon={IconActivityHeartbeat} label={copy.liveNow} value="1" tone="positive" />
         <Metric icon={IconClock} label={copy.unresolved} value="2" tone="attention" />
       </div>
-      <section className="surface evidence-card">
+      <section className="surface notice-card">
         <span className="icon-well"><IconLock size={20} stroke={1.8} /></span>
         <div>
-          <h3>{copy.boundaryTitle}</h3>
-          <p>{copy.boundaryText}</p>
+          <h3>{copy.noticeTitle}</h3>
+          <p>{copy.noticeText}</p>
         </div>
       </section>
     </Page>

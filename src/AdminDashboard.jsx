@@ -56,8 +56,8 @@ const COPY = Object.freeze({
     terminal: 'Processing complete',
     open: 'Open',
     noEvents: 'No reminder events have been created.',
-    evidenceTitle: 'Sender evidence is not handset evidence',
-    evidenceText: 'Accepted means the configured sender accepted the request. It does not confirm that a handset displayed a notification. Handset display remains unverified.',
+    deliveryTitle: 'Notification status',
+    deliveryText: 'Accepted means the configured sender accepted the request. It does not confirm that a phone displayed the notification.',
     loading: 'Loading dashboard…',
     unknown: 'Unknown',
     live: 'Live',
@@ -105,8 +105,8 @@ const COPY = Object.freeze({
     terminal: '处理完毕',
     open: '未完成',
     noEvents: '尚未创建提醒事件。',
-    evidenceTitle: '发送端证据不等于手机证据',
-    evidenceText: '“已接受”仅表示配置的发送端接受了请求，不代表手机已经展示通知。',
+    deliveryTitle: '通知状态',
+    deliveryText: '“已接受”仅表示配置的发送端接受了请求，不代表手机已经展示通知。',
     loading: '正在加载后台…',
     unknown: '未知',
     live: '直播中',
@@ -296,7 +296,7 @@ function DashboardView({ copy, language, dashboard, busy, error, onRefresh, onLo
           )}
         </section>
 
-        <aside className="evidence-banner"><IconLock size={21} stroke={1.8} /><div><h2>{copy.evidenceTitle}</h2><p>{copy.evidenceText}</p></div></aside>
+        <aside className="delivery-banner"><IconLock size={21} stroke={1.8} /><div><h2>{copy.deliveryTitle}</h2><p>{copy.deliveryText}</p></div></aside>
       </main>
     </div>
   );

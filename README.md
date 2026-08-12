@@ -4,7 +4,7 @@ A starter kit for one operator to run live-status monitoring and WeChat reminder
 
 一位运营者部署一次直播状态监控和微信提醒服务，普通用户直接使用其小程序，不需要自己购买服务器。
 
-[Download v1.2.0 / 下载 v1.2.0](https://github.com/drfellingood/live-reminder-platform-public/releases/tag/v1.2.0)
+[Download v1.2.1 / 下载 v1.2.1](https://github.com/drfellingood/live-reminder-platform-public/releases/tag/v1.2.1)
 
 > [!IMPORTANT]
 > This is source code and a reusable template, not a ready-made online service. / 这是源码模板，不是下载后立即可用的在线服务。
@@ -59,7 +59,7 @@ A normal page is not automatically a reliable status source. The included page a
 
 [Page detector / 页面检测器](docs/DOUYIN_PAGE_DETECTOR.md) · [Mini Program / 小程序](docs/WECHAT_MINIPROGRAM.md) · [Configuration / 配置](docs/CONFIGURATION.md) · [Deployment & backups / 部署备份](docs/DEPLOYMENT.md) · [Security / 安全](SECURITY.md)
 
-## Important limits / 重要边界
+## Before real use / 正式使用前
 
 Users must approve reminders; sender `accepted` does not prove phone display. Test the real template, backups, security, and phone delivery before launch. / 用户需主动授权；接口接受不代表手机弹出，正式开放前请完成真实测试。
 

@@ -68,7 +68,7 @@
   font-weight: 650;
 }
 
-.activity-boundary {
+.activity-note {
   margin-top: 14rpx;
   color: #6e6e73;
   font-size: 23rpx;

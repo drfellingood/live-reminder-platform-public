@@ -41,9 +41,9 @@ h1, h2, h3, p { margin-top: 0; }
 .metric strong { grid-column: 1 / -1; color: #18202b; font-size: 2rem; letter-spacing: -.05em; }
 .metric--positive svg { color: #16865d; }
 .metric--attention svg { color: #b56b12; }
-.evidence-card { display: flex; gap: 14px; padding: 20px; }
-.evidence-card h3, .setting-row h3, .channel-row h3, .message-row h3, .timeline h3 { margin-bottom: 4px; font-size: .95rem; }
-.evidence-card p, .setting-row p, .channel-row p, .message-row p, .timeline p { margin-bottom: 0; color: #6c7789; font-size: .86rem; line-height: 1.5; }
+.notice-card { display: flex; gap: 14px; padding: 20px; }
+.notice-card h3, .setting-row h3, .channel-row h3, .message-row h3, .timeline h3 { margin-bottom: 4px; font-size: .95rem; }
+.notice-card p, .setting-row p, .channel-row p, .message-row p, .timeline p { margin-bottom: 0; color: #6c7789; font-size: .86rem; line-height: 1.5; }
 .icon-well, .channel-glyph { display: inline-grid; flex: 0 0 auto; width: 38px; height: 38px; place-items: center; border-radius: 13px; color: #39718d; background: #edf6fa; }
 .icon-well--positive { color: #16865d; background: #eaf8f1; }
 .divided-list { overflow: hidden; }

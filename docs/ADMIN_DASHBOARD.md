@@ -17,7 +17,7 @@ The command prints a loopback URL and temporary password. The demo:
 - does not persist data, poll status, or call a delivery endpoint;
 - reuses the same authenticated HTTP and web-interface seam as self-hosted mode.
 
-Demo counts are presentation fixtures, not operational evidence.
+Demo counts are fictional examples, not real service data.
 
 ## Self-hosted dashboard
 
@@ -40,7 +40,7 @@ Use `POST /api/v1/operator/queries` with the separate `OPERATOR_SECRET` when an 
 
 Per-recipient query results are sensitive operational data. Keep them out of browser dashboards, shared screenshots, public issues, analytics, and ordinary application logs. Executable PowerShell and curl examples are in [Configuration](CONFIGURATION.md#operator-command-and-query-http-contracts).
 
-## Authentication and browser boundary
+## Authentication and browser access
 
 - The server fails before listening if the administrator hash, session secret, observation secret, operator secret, or core is missing.
 - Passwords must contain at least 12 characters before hashing. `npm run admin:secrets` creates a suitable one-time password, scrypt hash, session secret, observation secret, and distinct operator secret.
@@ -52,7 +52,7 @@ Per-recipient query results are sensitive operational data. Keep them out of bro
 - The dashboard contract is aggregate-only. Recipient identifiers and receipt details are available only through the separately authenticated operator query contract.
 - Set `SELF_HOSTED_READ_ONLY=1` during evidence preservation or maintenance to block observations and operator commands while retaining admin and operator-query reads.
 
-## Evidence labels
+## Delivery status labels
 
 `accepted` means the configured sender accepted a request. The core deliberately records handset display as unverified. `ambiguous` means a request may have started but no definitive sender outcome is known. Neither status may be rewritten as handset delivery.
 

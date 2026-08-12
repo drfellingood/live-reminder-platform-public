@@ -29,7 +29,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Project-owned interface artwork
 
-The mini-program also includes two abstract raster assets created for this project from text-only prompts, without a person, photograph, platform logo, or third-party brand as input:
+The mini-program also includes two abstract raster assets created for this project. They contain no person, photograph, platform logo, or third-party brand:
 
 - `wechat-miniprogram/assets/branding/live-reminder.png` — SHA-256 `94619afd6cc0a11b99b7e4346788103492f5ab2b19431586246e3f6168ec7fea`
 - `wechat-miniprogram/assets/avatars/channel.png` — SHA-256 `34531ee68acfb6e63318d1e9bc3a1ceba527fda4b71b3334c0873445d0971665`

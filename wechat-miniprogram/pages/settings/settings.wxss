@@ -4,7 +4,7 @@
 
 .account-card,
 .compact-state,
-.evidence-card {
+.privacy-card {
   margin-top: 22rpx;
 }
 
@@ -45,7 +45,7 @@
 }
 
 .account-card .row:first-of-type,
-.evidence-card .row:first-of-type {
+.privacy-card .row:first-of-type {
   border-top: 1rpx solid #ececf0;
 }
 

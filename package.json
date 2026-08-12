@@ -1,7 +1,7 @@
 {
   "name": "live-reminder-platform",
-  "version": "1.2.0",
-  "description": "A vendor-neutral, self-hosted live-status reminder platform with auditable per-recipient delivery evidence.",
+  "version": "1.2.1",
+  "description": "A self-hosted live-status monitoring and WeChat reminder starter kit.",
   "private": true,
   "type": "module",
   "engines": {
