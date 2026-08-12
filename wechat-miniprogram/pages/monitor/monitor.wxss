@@ -1,80 +1,142 @@
+.hero-art {
+  display: block;
+  width: 100%;
+  height: 680rpx;
+  margin-bottom: 24rpx;
+  background: #08203d;
+  border-radius: 32rpx;
+  box-shadow: 0 16rpx 42rpx rgba(8, 32, 61, 0.13);
+}
+
+.monitor-card,
+.reminder-card {
+  margin-top: 22rpx;
+}
+
+.monitor-card {
+  margin-top: 0;
+}
+
+.compact-empty {
+  padding: 42rpx 28rpx 48rpx;
+  text-align: center;
+  border-top: 1rpx solid #ececf0;
+}
+
+.channel-summary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 22rpx 26rpx 26rpx;
+  border-top: 1rpx solid #ececf0;
+}
+
+.channel-summary-row + .channel-summary-row {
+  padding-top: 26rpx;
+}
+
+.channel-avatar {
+  width: 76rpx;
+  height: 76rpx;
+  flex: none;
+  background: #08203d;
+  border-radius: 50%;
+}
+
+.channel-summary-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.channel-summary-topline {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.channel-name {
+  min-width: 0;
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.channel-meta {
+  margin-top: 7rpx;
+  color: #6e6e73;
+  font-size: 23rpx;
+  line-height: 1.45;
+}
+
+.channel-hint {
+  margin-top: 14rpx;
+  color: #55555b;
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+
+.reminder-heading {
+  align-items: center;
+  padding-bottom: 24rpx;
+}
+
 .credit-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24rpx;
-  padding: 24rpx;
+  padding: 24rpx 26rpx 26rpx;
   border-top: 1rpx solid #ececf0;
+}
+
+.credit-copy {
+  min-width: 120rpx;
 }
 
 .credit-label {
   color: #6e6e73;
   font-size: 23rpx;
+  line-height: 1.35;
 }
 
 .credit-value {
-  margin-top: 4rpx;
-  font-size: 48rpx;
-  font-weight: 750;
+  margin-top: 6rpx;
+  font-size: 50rpx;
+  font-weight: 760;
   line-height: 1;
 }
 
 .add-button {
-  min-width: 244rpx;
-  min-height: 72rpx;
+  min-width: 250rpx;
+  min-height: 88rpx;
   margin: 0;
-  padding: 0 22rpx;
+  padding: 0 24rpx;
   color: #ffffff;
-  background: #007aff;
-  border-radius: 36rpx;
+  background: #0066cc;
+  border-radius: 44rpx;
   font-size: 25rpx;
-  font-weight: 650;
-  line-height: 72rpx;
+  font-weight: 680;
+  line-height: 88rpx;
 }
 
 .add-button[disabled] {
-  color: #8e8e93;
+  color: #7b7b82;
   background: #e8e8ed;
 }
 
-.channel-list {
-  display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-}
+@media (max-width: 340px) {
+  .hero-art {
+    height: 600rpx;
+  }
 
-.channel-card {
-  padding: 26rpx;
-}
+  .credit-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
 
-.channel-topline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-}
-
-.channel-name {
-  min-width: 0;
-  overflow: hidden;
-  flex: 1;
-  font-size: 31rpx;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.channel-meta {
-  margin-top: 12rpx;
-  color: #6e6e73;
-  font-size: 23rpx;
-}
-
-.channel-hint {
-  margin-top: 18rpx;
-  padding-top: 18rpx;
-  color: #55555b;
-  border-top: 1rpx solid #ececf0;
-  font-size: 23rpx;
-  line-height: 1.5;
+  .add-button {
+    width: 100%;
+  }
 }

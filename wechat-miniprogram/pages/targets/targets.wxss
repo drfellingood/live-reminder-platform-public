@@ -1,17 +1,28 @@
-.first-notice {
+.target-list-card {
   margin-top: 0;
+}
+
+.compact-empty {
+  padding: 50rpx 30rpx 56rpx;
+  text-align: center;
+  border-top: 1rpx solid #ececf0;
 }
 
 .target-row {
   display: flex;
   align-items: center;
-  gap: 24rpx;
-  min-height: 150rpx;
-  padding: 24rpx;
+  gap: 20rpx;
+  min-height: 154rpx;
+  padding: 24rpx 26rpx;
+  border-top: 1rpx solid #ececf0;
 }
 
-.target-row + .target-row {
-  border-top: 1rpx solid #ececf0;
+.target-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  flex: none;
+  background: #08203d;
+  border-radius: 50%;
 }
 
 .target-copy {
@@ -21,28 +32,28 @@
 
 .target-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14rpx;
 }
 
 .target-name {
   min-width: 0;
-  overflow: hidden;
   flex: 1;
   font-size: 30rpx;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .target-meta,
 .target-choice {
-  margin-top: 8rpx;
+  margin-top: 7rpx;
   color: #6e6e73;
   font-size: 23rpx;
+  line-height: 1.45;
 }
 
 .target-choice {
-  color: #007aff;
-  font-weight: 600;
+  color: #0066cc;
+  font-weight: 650;
 }

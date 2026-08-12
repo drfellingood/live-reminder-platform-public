@@ -1,23 +1,75 @@
-<view class="page-shell">
+<view class="page-shell" aria-live="polite" aria-busy="{{viewState === 'loading' || savingReminders || grantState === 'saving'}}">
   <view class="card state-card" wx:if="{{viewState === 'loading'}}">
     <view class="spinner" aria-hidden="true"></view>
     <view class="state-title">{{t.loading}}</view>
   </view>
 
   <view class="card state-card" wx:elif="{{viewState === 'error' || viewState === 'unauthorized'}}">
-    <view class="state-symbol" aria-hidden="true">!</view>
+    <view class="state-icon-well" aria-hidden="true">
+      <icon type="warn" size="28" color="#0066cc" />
+    </view>
     <view class="state-title">{{errorTitle}}</view>
     <view class="state-body">{{errorMessage}}</view>
     <button class="inline-button" bindtap="onRetry">{{viewState === 'unauthorized' ? t.reauthenticate : t.retry}}</button>
   </view>
 
   <block wx:else>
-    <view class="section-label">{{t.remindersTitle}}</view>
-    <view class="card">
-      <view class="row">
-        <view class="row-main">
-          <view class="row-title">{{savingReminders ? t.saving : (remindersEnabled ? t.remindersOn : t.remindersOff)}}</view>
-          <view class="row-subtitle" wx:if="{{!remindersEnabled}}">{{t.remindersDisabledHint}}</view>
+    <image
+      class="hero-art"
+      src="/assets/branding/live-reminder.png"
+      mode="aspectFill"
+      aria-label="{{t.appName}}"
+    />
+
+    <view class="card monitor-card">
+      <view class="card-header">
+        <view class="card-heading">
+          <view class="card-title">{{t.monitorSection}}</view>
+          <view class="card-description">{{t.monitorHint}}</view>
+        </view>
+        <view class="count-pill">{{channels.length}}</view>
+      </view>
+
+      <view class="compact-empty" wx:if="{{viewState === 'empty'}}">
+        <view class="state-icon-well" aria-hidden="true">
+          <icon type="info" size="28" color="#0066cc" />
+        </view>
+        <view class="state-title">{{t.noMonitoredTitle}}</view>
+        <view class="state-body">{{t.noMonitoredBody}}</view>
+      </view>
+
+      <block wx:else>
+        <view class="channel-summary-row" wx:for="{{channels}}" wx:key="id">
+          <image class="channel-avatar" src="/assets/avatars/channel.png" mode="aspectFill" aria-hidden="true" />
+          <view class="channel-summary-copy">
+            <view class="channel-summary-topline">
+              <view class="channel-name">{{item.displayName}}</view>
+              <view class="status-pill {{item.displayState}}">{{item.statusText}}</view>
+            </view>
+            <view class="channel-meta">{{t.sourceLabel}} · {{item.sourceLabel}}</view>
+            <view class="channel-meta">{{t.updatedAt}} · {{item.updatedAtLabel}}</view>
+            <view class="channel-hint">{{item.statusHint}}</view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="notice notice-row">
+      <view class="icon-well" aria-hidden="true">
+        <icon type="info" size="20" color="#0066cc" />
+      </view>
+      <view class="notice-copy">{{t.acceptedNotDisplayed}}</view>
+    </view>
+
+    <view class="card reminder-card">
+      <view class="card-header reminder-heading">
+        <view class="icon-well" aria-hidden="true">
+          <icon type="waiting" size="21" color="#0066cc" />
+        </view>
+        <view class="card-heading">
+          <view class="card-title">{{t.remindersTitle}}</view>
+          <view class="card-description">{{savingReminders ? t.saving : (remindersEnabled ? t.remindersOn : t.remindersOff)}}</view>
+          <view class="card-description" wx:if="{{!remindersEnabled}}">{{t.remindersDisabledHint}}</view>
         </view>
         <switch
           color="#34c759"
@@ -28,7 +80,7 @@
         />
       </view>
       <view class="credit-row">
-        <view>
+        <view class="credit-copy">
           <view class="credit-label">{{t.reminderCredits}}</view>
           <view class="credit-value">{{availableCredits}}</view>
         </view>
@@ -40,27 +92,11 @@
       </view>
     </view>
 
-    <view class="notice warning-notice" wx:if="{{grantState === 'pending-sync'}}">{{t.grantSyncPending}}</view>
-
-    <view class="notice">{{t.acceptedNotDisplayed}}</view>
-
-    <view class="section-label">{{t.monitorSection}}</view>
-    <view class="state-card card" wx:if="{{viewState === 'empty'}}">
-      <view class="state-symbol" aria-hidden="true">+</view>
-      <view class="state-title">{{t.noMonitoredTitle}}</view>
-      <view class="state-body">{{t.noMonitoredBody}}</view>
-    </view>
-
-    <view class="channel-list" wx:else>
-      <view class="card channel-card" wx:for="{{channels}}" wx:key="id">
-        <view class="channel-topline">
-          <view class="channel-name">{{item.displayName}}</view>
-          <view class="status-pill {{item.displayState}}">{{item.statusText}}</view>
-        </view>
-        <view class="channel-meta">{{t.sourceLabel}} · {{item.sourceLabel}}</view>
-        <view class="channel-meta">{{t.updatedAt}} · {{item.updatedAtLabel}}</view>
-        <view class="channel-hint">{{item.statusHint}}</view>
+    <view class="notice warning-notice notice-row" wx:if="{{grantState === 'pending-sync'}}">
+      <view class="icon-well warning" aria-hidden="true">
+        <icon type="warn" size="20" color="#9b6300" />
       </view>
+      <view class="notice-copy">{{t.grantSyncPending}}</view>
     </view>
   </block>
 </view>

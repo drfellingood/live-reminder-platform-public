@@ -14,25 +14,33 @@
   },
   "tabBar": {
     "color": "#7d7d84",
-    "selectedColor": "#007aff",
+    "selectedColor": "#0066cc",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/monitor/monitor",
-        "text": "Monitor"
+        "text": "Monitor",
+        "iconPath": "assets/tabbar/monitor.png",
+        "selectedIconPath": "assets/tabbar/monitor-selected.png"
       },
       {
         "pagePath": "pages/targets/targets",
-        "text": "Targets"
+        "text": "Targets",
+        "iconPath": "assets/tabbar/targets.png",
+        "selectedIconPath": "assets/tabbar/targets-selected.png"
       },
       {
         "pagePath": "pages/activity/activity",
-        "text": "Activity"
+        "text": "Activity",
+        "iconPath": "assets/tabbar/activity.png",
+        "selectedIconPath": "assets/tabbar/activity-selected.png"
       },
       {
         "pagePath": "pages/settings/settings",
-        "text": "Settings"
+        "text": "Settings",
+        "iconPath": "assets/tabbar/settings.png",
+        "selectedIconPath": "assets/tabbar/settings-selected.png"
       }
     ]
   },
