@@ -37,6 +37,7 @@
   "recipients": [],
   "statusSources": [
     {
+      "kind": "http-json",
       "id": "sample-status-endpoint",
       "broadcasterId": "sample-channel",
       "url": "https://status.example.invalid/live.json",

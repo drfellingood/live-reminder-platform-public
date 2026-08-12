@@ -4,7 +4,7 @@ A starter kit for one operator to run live-status monitoring and WeChat reminder
 
 一位运营者部署一次直播状态监控和微信提醒服务，普通用户直接使用其小程序，不需要自己购买服务器。
 
-[Download v1.1.0 / 下载 v1.1.0](https://github.com/drfellingood/live-reminder-platform-public/releases/tag/v1.1.0)
+[Download v1.2.0 / 下载 v1.2.0](https://github.com/drfellingood/live-reminder-platform-public/releases/tag/v1.2.0)
 
 > [!IMPORTANT]
 > This is source code and a reusable template, not a ready-made online service. / 这是源码模板，不是下载后立即可用的在线服务。
@@ -28,8 +28,8 @@ Target page / 我想监控的公开页面：
 First confirm that you can read the repository. If not, ask me to upload the public source ZIP or needed public guide; do not guess. Ask whether I want the demo or real deployment, and which operating system I use. Give me one step at a time.
 先确认你能读取仓库；如果不能，让我上传公开源码 ZIP 或所需说明，不要猜测。询问我是体验演示还是真实部署，以及使用什么系统。每次只给我一个步骤。
 
-For real use, help me configure my own Mini Program, HTTPS server, notification template, and authorized status API or adapter. An ordinary page URL cannot be monitored directly. Never request secrets or real user data, and do not publish or deploy without my approval.
-正式使用时，帮我配置自己的小程序、HTTPS 服务器、通知模板和合法获授权的状态接口或适配器；普通页面链接不能直接监控。不要索取密钥或真实用户数据，未经我确认不要上传或部署。
+For real use, help me configure my own Mini Program, HTTPS server, notification template, and one authorized status source. If my target is a canonical Douyin profile, check whether the included visible-browser adapter is suitable; do not claim that every share or livestream URL works. Never request secrets or real user data, bypass verification, or publish/deploy without my approval.
+正式使用时，帮我配置自己的小程序、HTTPS 服务器、通知模板和一个合法获授权的状态源。如果目标是规范的抖音用户主页，先判断内置的可视浏览器适配器是否适合；不要声称任意分享链接或直播链接都能使用。不要索取密钥或真实用户数据，不要绕过安全验证，未经我确认不要上传或部署。
 ```
 
 </details>
@@ -49,15 +49,15 @@ Open the local address and use the temporary password shown in the terminal. / �
 
 1. Your own WeChat Mini Program and subscription-message template / 自己的小程序和订阅消息模板
 2. One HTTPS server and accepted domain / 一台带 HTTPS 域名的服务器
-3. An authorized status API or adapter returning `live`, `offline`, or `unknown` / 合法获授权的开播状态接口或适配器
+3. One authorized status source: the optional visible-browser adapter for a canonical Douyin profile, or your own status API / 一个获授权的状态源：可选的抖音规范主页可视浏览器适配器，或你自己的状态接口
 
-A normal livestream page is only the monitoring target; it is not automatically a status API.
+A normal page is not automatically a reliable status source. The included page adapter accepts only canonical `https://www.douyin.com/user/...` profiles, needs an operator-controlled signed-in visible Chromium browser, and returns `unknown` on verification, rate limits, identity mismatch, or incomplete evidence.
 
-普通直播页面只是监控目标，不能直接当作可靠状态接口。
+普通页面不能自动当作可靠状态源。内置页面适配器只接受规范的 `https://www.douyin.com/user/...` 用户主页，需要运营者自己的已登录可视 Chromium；遇到验证、限流、身份不符或证据不完整时只返回 `unknown`。
 
 ## Setup guides / 配置说明
 
-[Mini Program / 小程序](docs/WECHAT_MINIPROGRAM.md) · [Configuration / 配置](docs/CONFIGURATION.md) · [Deployment & backups / 部署备份](docs/DEPLOYMENT.md) · [Security / 安全](SECURITY.md)
+[Page detector / 页面检测器](docs/DOUYIN_PAGE_DETECTOR.md) · [Mini Program / 小程序](docs/WECHAT_MINIPROGRAM.md) · [Configuration / 配置](docs/CONFIGURATION.md) · [Deployment & backups / 部署备份](docs/DEPLOYMENT.md) · [Security / 安全](SECURITY.md)
 
 ## Important limits / 重要边界
 

@@ -1,6 +1,6 @@
 # Self-hosting and deployment
 
-This repository provides a complete single-process composition root. It does not require a particular cloud vendor. Operators connect their own HTTPS status endpoint and choose either the included WeChat Mini Program subscribe-message path or their own HTTPS delivery webhook.
+This repository provides a complete single-process composition root. It does not require a particular cloud vendor. Operators choose an authorized status source (their own HTTPS JSON endpoint or the optional visible-browser Douyin profile adapter) and either the included WeChat Mini Program subscribe-message path or their own HTTPS delivery webhook.
 
 A local build or sender `2xx` response is not proof that every eligible recipient was processed or that a handset displayed a notification.
 
@@ -42,6 +42,8 @@ Copy-Item server/self-hosted.env.example .env
 Copy-Item config/self-hosted.example.json config/self-hosted.json
 ```
 
+For the optional canonical Douyin profile adapter, copy `config/douyin-page.example.json` instead and follow [Optional Douyin page detector](DOUYIN_PAGE_DETECTOR.md). Its CDP port must remain loopback-only and the dedicated visible browser must be started and signed in manually.
+
 Both destinations are ignored by Git. Replace the fictional sample values with identifiers and endpoints you are authorized to use. Do not put credentials in the JSON file or URL query string.
 
 For the included Mini Program, also copy `wechat-miniprogram/config.example.js` to the ignored `wechat-miniprogram/config.local.js`. Follow [WeChat Mini Program setup](WECHAT_MINIPROGRAM.md); do not put AppSecret or any server credential in the client directory.
@@ -52,7 +54,7 @@ Each status endpoint returns exactly one of these states:
 { "status": "live" }
 ```
 
-Allowed values are `live`, `offline`, and `unknown`. The default scheduler polls every 120 seconds. A possible `live` result is read again after 10 seconds before submission; `offline` and `unknown` transitions are submitted immediately. Network, parsing, redirect, timeout, or security-challenge failures become `unknown`, never fabricated `offline`.
+Allowed values are `live`, `offline`, and `unknown`. The default scheduler polls every 120 seconds. A possible transition to either `live` or `offline` is read again after 10 seconds before submission; disagreement or any uncertain result becomes `unknown`, never fabricated `offline`.
 
 The recipient bootstrap format is documented in [Configuration](CONFIGURATION.md). Initial credits apply only when a recipient is first created. Removing a subscription from JSON does not mutate an existing subscription.
 
@@ -175,4 +177,4 @@ A `terminal` event has finished processing and accounting, but it may still cont
 
 ## 中文摘要
 
-陌生人克隆后可以直接运行 `npm start`：首次只在本机生成 SQLite、本机密钥和一次性显示的后台密码。要接入微信小程序，需要自己的 AppID、AppSecret、订阅消息模板、HTTPS 域名、独立 `CLIENT_IDENTITY_SECRET`、公开频道白名单和合法获授权的状态接口；小程序客户端配置中只能放公开 API 地址。核心数据库、客户端数据库和对应密钥必须一起备份恢复。公网前必须配置 HTTPS 反向代理、防火墙、安全 Cookie、独立密钥、限流、监控和经过恢复演练的备份。SQLite 参考实现只支持单进程；微信接口接受请求不等于手机已经显示通知。
+陌生人克隆后可以直接运行 `npm start`：首次只在本机生成 SQLite、本机密钥和一次性显示的后台密码。要接入微信小程序，需要自己的 AppID、AppSecret、订阅消息模板、HTTPS 域名、独立 `CLIENT_IDENTITY_SECRET`、公开频道白名单和合法获授权的状态源。状态源可以是自己的 HTTPS JSON 接口，也可以是只连接本机已登录可视浏览器的规范抖音主页适配器；后者不会绕过验证码或限流。小程序客户端配置中只能放公开 API 地址。核心数据库、客户端数据库和对应密钥必须一起备份恢复。公网前必须配置 HTTPS 反向代理、防火墙、安全 Cookie、独立密钥、限流、监控和经过恢复演练的备份。SQLite 参考实现只支持单进程；微信接口接受请求不等于手机已经显示通知。

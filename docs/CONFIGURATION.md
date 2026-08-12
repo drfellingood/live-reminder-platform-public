@@ -6,7 +6,7 @@ This document describes the vendor-neutral self-hosted runtime. It is a configur
 
 - Node.js 22.13 or newer. The SQLite adapter uses the built-in `node:sqlite` module.
 - A private configuration path ignored by Git.
-- An operator-owned HTTPS status endpoint for automatic detection.
+- One operator-authorized status source: an HTTPS JSON endpoint or the optional visible-browser Douyin profile adapter.
 - An operator-owned delivery integration: either the included WeChat subscribe-message adapter or an HTTPS webhook.
 
 The repository contains no production account, endpoint, recipient, or secret defaults.
@@ -54,6 +54,7 @@ This mode is useful for local evaluation. The local inbox accepts into process m
 | `WECHAT_MINIPROGRAM_TEMPLATE_ID` | When client is enabled | none | Subscription-message template used both by the client grant flow and sender. |
 | `CLIENT_IDENTITY_SECRET` | When client is enabled | none | At least 32 characters. Encrypts the external delivery identity in the client database; back it up and never reuse another credential. |
 | `WECHAT_API_TIMEOUT_MS` | No | `5000` | Timeout for WeChat identity and send requests. |
+| `STATUS_BROWSER_CDP_ENDPOINT` | When a `douyin-page` source is configured | none | Credential-free loopback CDP URL for an operator-owned visible Chromium, for example `http://127.0.0.1:9222`. Never expose this endpoint. |
 
 Provide all four server secrets together or none. Partial explicit secret configuration fails closed. Remote mode never auto-generates them. `ADMIN_SESSION_SECRET`, `OBSERVATION_SECRET`, and `OPERATOR_SECRET` must be pairwise different because a status collector must never gain session, credit, or receipt-resolution authority. A generated `local-secrets.json` may contain only these four named fields; malformed, extra, or reused values are rejected before SQLite is opened.
 
@@ -154,8 +155,11 @@ After bootstrap, use the separately authenticated operator command endpoint desc
 
 ### Status sources
 
+Every source uses the same deep contract: `read()` returns only `live`, `offline`, or `unknown`. `kind` selects one of two built-in adapters. Omitting `kind` keeps backward compatibility with `http-json`.
+
 ```json
 {
+  "kind": "http-json",
   "id": "primary-status-source",
   "broadcasterId": "private-channel-id",
   "url": "https://status.example.invalid/channel",
@@ -168,9 +172,38 @@ After bootstrap, use the separately authenticated operator command endpoint desc
 
 The endpoint must return a JSON body no larger than 64 KiB containing `status` equal to `live`, `offline`, or `unknown`. Oversized bodies become `unknown` and are not retained. HTTPS is required. Set `allowLoopbackHttp` to `true` only for deliberate loopback development. When authentication is required, set `bearerTokenEnvironment` to the name of an environment variable; the secret value stays out of JSON and evidence. Credentials embedded as URL username/password are rejected, redirects are rejected, and recorded evidence omits the query string.
 
+The optional page adapter accepts only a canonical Douyin user profile and attaches to an operator-owned, already signed-in visible Chromium browser:
+
+```json
+{
+  "browser": {
+    "kind": "chromium-cdp",
+    "endpointEnvironment": "STATUS_BROWSER_CDP_ENDPOINT",
+    "connectTimeoutMs": 10000,
+    "minimumReadSpacingMs": 12000
+  },
+  "statusSources": [
+    {
+      "kind": "douyin-page",
+      "id": "authorized-page-source",
+      "broadcasterId": "public-channel-id",
+      "url": "https://www.douyin.com/user/sample_identity",
+      "expectedIdentity": "sample_identity",
+      "timeoutMs": 30000,
+      "pollIntervalMs": 120000,
+      "confirmationIntervalMs": 10000
+    }
+  ]
+}
+```
+
+The URL must equal `https://www.douyin.com/user/<expectedIdentity>` exactly. The CDP endpoint is read from the named server environment variable and is restricted to loopback. The runtime attaches to a visible browser; it does not launch an anonymous fallback or own/close the external browser. Page reads are serialized across all configured page targets. Startup rejects a declared worst-case page batch that cannot fit within the shortest page poll interval.
+
+Fresh identity, explicit status, and live-room evidence must agree. Verification, rate limits, browser failure, timeout, redirects, identity mismatch, missing fields, or conflicting room evidence become `unknown`; raw page data, cookies, and target identity are not stored in observation evidence. See [Optional Douyin page detector](DOUYIN_PAGE_DETECTOR.md).
+
 The built-in scheduler accepts exactly one status-source definition per `broadcasterId`. Multiple independent sources need an explicit arbitration adapter; configuring two directly is rejected because conflicting `live`/`offline` readings could otherwise create false transitions.
 
-The scheduler polls immediately and at `pollIntervalMs`. A possible `live` result needs a second `live` after `confirmationIntervalMs`; `offline` and `unknown` changes are submitted immediately. Repeated identical readings are forwarded as freshness heartbeats without transition IDs, so they update the latest reading without creating another event or an unbounded idempotency record.
+The scheduler polls immediately and at `pollIntervalMs`. Any explicit transition to `live` or `offline` needs a second matching reading after `confirmationIntervalMs`. A disagreement is submitted as `unknown`, and any `unknown` interrupts confirmation. Repeated identical explicit readings are forwarded as freshness heartbeats without transition IDs, so they update the latest reading without creating another event or an unbounded idempotency record.
 
 A new live event is re-armed only after an observed `offline`. If the process is down, or polling misses the complete offline interval between two sessions, a status-only endpoint cannot prove that the second `live` is a new session.
 
@@ -318,7 +351,12 @@ The modules can be composed directly:
 - `createSqliteStore({ filename, readOnly })`
 - `createWebhookDelivery({ url, timeoutMs, headers, allowInsecureLoopback })`
 - `createHttpJsonStatusSource({ id, url, timeoutMs, allowLoopbackHttp, bearerToken })`
+- `createDouyinPageStatusSource({ id, url, expectedIdentity, timeoutMs, driver })`
+- `createPlaywrightCdpDouyinDriver({ endpoint, connectTimeoutMs, minimumReadSpacingMs })`
+- `createStatusSourceRuntime({ definitions, browser, createBrowserDriver })`
 - `createPollScheduler({ broadcasterId, statusSource, onObservation, pollIntervalMs, confirmationIntervalMs, onError })`
+
+The status-source runtime owns the shared CDP transport. Call `await runtime.start()` before scheduling reads and `await runtime.close()` after every scheduler has drained; callers still see only the narrow `{ id, read() }` source interface.
 
 When `server/self-hosted-server.cjs` is run directly instead of through `server/start.cjs`, `SELF_HOSTED_CORE_MODULE` is required. Its path is resolved from the process working directory and it must export a core object, `createCore`, or `coreFactory`.
 
@@ -333,6 +371,6 @@ The demo ignores self-hosted database, status, recipient, and delivery configura
 
 ## 中文摘要
 
-启用小程序客户端时，需要在私有 JSON 中设置 `client.enabled=true`、公开频道和模板字段，并在服务器 `.env` 中填写自己的 AppID、AppSecret、模板 ID 与独立的 `CLIENT_IDENTITY_SECRET`。小程序只获得公开频道和当前登录用户自己的状态；OpenID、内部接收者 ID、状态源地址和管理密钥不会返回客户端。微信订阅授权必须由用户主动触发，一次接受只增加一次幂等提醒额度。真实部署应设置 HTTPS 状态接口，并选择微信订阅消息或自有 webhook 投递；启用内置小程序时只能使用微信订阅消息投递。`accepted` 仍然只代表发送接口接受，不代表手机已经显示。
+启用小程序客户端时，需要在私有 JSON 中设置 `client.enabled=true`、公开频道和模板字段，并在服务器 `.env` 中填写自己的 AppID、AppSecret、模板 ID 与独立的 `CLIENT_IDENTITY_SECRET`。小程序只获得公开频道和当前登录用户自己的状态；OpenID、内部接收者 ID、状态源地址和管理密钥不会返回客户端。微信订阅授权必须由用户主动触发，一次接受只增加一次幂等提醒额度。真实部署应选择一个获授权的状态源（自己的 HTTPS JSON 接口，或规范抖音主页的可视浏览器适配器），并选择微信订阅消息或自有 webhook 投递；启用内置小程序时只能使用微信订阅消息投递。`accepted` 仍然只代表发送接口接受，不代表手机已经显示。
 
-运行 `npm start` 可以启动本机自托管版本：首次会在被忽略的 `.data` 目录生成 SQLite 和本机密钥，并只打印一次管理员密码。默认没有真实用户或状态来源，发送方式也是内存收件箱，不能发真实通知。真实部署要把 JSON 配置放在私有路径，设置自己的 HTTPS 状态接口并选择已配置的投递方式；远程模式必须显式提供管理员密码哈希、会话密钥、观测密钥和独立运维密钥，并配置 HTTPS 反向代理。观测接口必须带非空 `observationId` 和服务器时间前后五分钟内的 `observedAt`。逐人回执只能通过运维查询接口读取，属于敏感数据；人工处理不确定回执必须带唯一 `resolutionId` 和外部证据。`SELF_HOSTED_READ_ONLY=1` 会禁止观测和运维写入，但仍允许后台与运维只读查询。
+运行 `npm start` 可以启动本机自托管版本：首次会在被忽略的 `.data` 目录生成 SQLite 和本机密钥，并只打印一次管理员密码。默认没有真实用户或状态来源，发送方式也是内存收件箱，不能发真实通知。真实部署要把 JSON 配置放在私有路径，选择一个获授权的状态源和已配置的投递方式；远程模式必须显式提供管理员密码哈希、会话密钥、观测密钥和独立运维密钥，并配置 HTTPS 反向代理。页面检测器只能连接本机可视浏览器，不能公开 CDP 端口或绕过验证。观测接口必须带非空 `observationId` 和服务器时间前后五分钟内的 `observedAt`。逐人回执只能通过运维查询接口读取，属于敏感数据；人工处理不确定回执必须带唯一 `resolutionId` 和外部证据。`SELF_HOSTED_READ_ONLY=1` 会禁止观测和运维写入，但仍允许后台与运维只读查询。

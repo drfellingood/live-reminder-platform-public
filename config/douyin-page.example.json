@@ -1,0 +1,43 @@
+{
+  "workerBatchSize": 100,
+  "policy": {
+    "creditCost": 1,
+    "defaultDeliveryLimit": 100,
+    "deliveryConcurrency": 8,
+    "deliveryDeadlineMs": 120000,
+    "deliveryRetryDelayMs": 5000
+  },
+  "browser": {
+    "kind": "chromium-cdp",
+    "endpointEnvironment": "STATUS_BROWSER_CDP_ENDPOINT",
+    "connectTimeoutMs": 10000,
+    "minimumReadSpacingMs": 12000
+  },
+  "client": {
+    "enabled": false
+  },
+  "channels": [
+    {
+      "id": "sample-channel",
+      "displayName": "Sample Channel",
+      "platform": "Authorized Douyin page",
+      "description": "Replace this fictional target with a canonical profile you are permitted to monitor.",
+      "enabled": true,
+      "sort": 10,
+      "staleAfterMs": 360000
+    }
+  ],
+  "recipients": [],
+  "statusSources": [
+    {
+      "kind": "douyin-page",
+      "id": "sample-page-source",
+      "broadcasterId": "sample-channel",
+      "url": "https://www.douyin.com/user/sample_identity",
+      "expectedIdentity": "sample_identity",
+      "timeoutMs": 30000,
+      "pollIntervalMs": 120000,
+      "confirmationIntervalMs": 10000
+    }
+  ]
+}

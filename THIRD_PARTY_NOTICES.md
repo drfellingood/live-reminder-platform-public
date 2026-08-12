@@ -9,6 +9,7 @@ The following direct npm dependencies are downloaded during installation and rem
 | `vite` | Development and production build tool | MIT |
 | `@vitejs/plugin-react` | React build integration | MIT |
 | `@tabler/icons-react` | Interface icon components | MIT |
+| `playwright-core` | Optional connection to an operator-owned visible Chromium browser | Apache-2.0 |
 
 Exact resolved versions are recorded in `package-lock.json`. Transitive dependencies are not reproduced in this short direct-dependency table; their metadata and installed license files remain authoritative. Review the lockfile and installed dependency notices when producing a distribution or software-bill-of-materials report.
 

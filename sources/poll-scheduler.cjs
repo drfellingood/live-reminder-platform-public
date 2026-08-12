@@ -28,7 +28,6 @@ function createPollScheduler(options = {}) {
 
   let intervalHandle;
   let inFlight;
-  let liveSubmitted = false;
   let lastSubmittedStatus = null;
 
   async function submitStatus(status, evidence) {
@@ -48,45 +47,46 @@ function createPollScheduler(options = {}) {
     await onObservation(observation);
     if (!isTransition) return null;
     lastSubmittedStatus = status;
-    liveSubmitted = status === 'live';
     return observation;
   }
 
   async function runCycle() {
     const initial = await safeRead(statusSource);
-    if (initial.status === 'offline') {
-      liveSubmitted = false;
-      const observation = await submitStatus('offline', initial.evidence);
-      return { status: 'offline', submitted: observation !== null, observation };
-    }
     if (initial.status === 'unknown') {
-      liveSubmitted = false;
       const observation = await submitStatus('unknown', initial.evidence);
       return { status: 'unknown', submitted: observation !== null, observation };
     }
-    if (liveSubmitted) {
-      const observation = await submitStatus('live', initial.evidence);
-      return { status: 'live', submitted: observation !== null, observation };
+    if (lastSubmittedStatus === initial.status) {
+      const observation = await submitStatus(initial.status, initial.evidence);
+      return { status: initial.status, submitted: observation !== null, observation };
     }
 
     await sleep(confirmationIntervalMs);
     const confirmation = await safeRead(statusSource);
-    if (confirmation.status !== 'live') {
-      liveSubmitted = false;
-      const observation = await submitStatus(confirmation.status, confirmation.evidence);
+    if (confirmation.status === 'unknown') {
+      const observation = await submitStatus('unknown', confirmation.evidence);
       return {
-        status: confirmation.status,
+        status: 'unknown',
         submitted: observation !== null,
         observation,
       };
     }
+    if (confirmation.status !== initial.status) {
+      const observation = await submitStatus('unknown', {
+        reason: 'confirmation-mismatch',
+        initialStatus: initial.status,
+        confirmationStatus: confirmation.status,
+      });
+      return { status: 'unknown', submitted: observation !== null, observation };
+    }
 
-    const observation = await submitStatus('live', flattenConfirmationEvidence(
+    const observation = await submitStatus(initial.status, flattenConfirmationEvidence(
+      initial.status,
       initial.evidence,
       confirmation.evidence,
       confirmationIntervalMs,
     ));
-    return { status: 'live', submitted: observation !== null, observation };
+    return { status: initial.status, submitted: observation !== null, observation };
   }
 
   function pollNow() {
@@ -112,11 +112,13 @@ function createPollScheduler(options = {}) {
     return firstPoll;
   }
 
-  function stop() {
+  async function stop() {
     if (intervalHandle !== undefined) {
       clearIntervalFn(intervalHandle);
       intervalHandle = undefined;
     }
+    const active = inFlight;
+    if (active) await active;
   }
 
   return Object.freeze({ start, stop, pollNow });
@@ -176,9 +178,10 @@ function isoTimestamp(value) {
   return date.toISOString();
 }
 
-function flattenConfirmationEvidence(initial, confirmation, confirmationIntervalMs) {
+function flattenConfirmationEvidence(confirmedStatus, initial, confirmation, confirmationIntervalMs) {
   return {
-    kind: 'confirmed-live',
+    kind: 'confirmed-transition',
+    confirmedStatus,
     confirmationIntervalMs,
     ...prefixPrimitiveEvidence('initial', initial),
     ...prefixPrimitiveEvidence('confirmation', confirmation),

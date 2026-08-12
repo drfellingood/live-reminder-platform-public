@@ -12,8 +12,9 @@ const { createWechatSubscribeDelivery } = require('../adapters/delivery/wechat-s
 const { createWechatMiniProgramIdentity } = require('../adapters/identity/wechat-mini-program.cjs');
 const { createSqliteClientStore } = require('../adapters/storage/sqlite-client-store.cjs');
 const { createSqliteStore } = require('../adapters/storage/sqlite-store.cjs');
-const { createHttpJsonStatusSource } = require('../sources/http-json-status-source.cjs');
+const { createPlaywrightCdpDouyinDriver } = require('../sources/playwright-cdp-douyin-driver.cjs');
 const { createPollScheduler } = require('../sources/poll-scheduler.cjs');
+const { createStatusSourceRuntime } = require('../sources/status-source-runtime.cjs');
 const { hashAdminPassword } = require('./admin-server.cjs');
 const { createClientPortal } = require('./client-portal.cjs');
 const { createClientRequestHandler } = require('./client-routes.cjs');
@@ -41,6 +42,7 @@ async function createSelfHostedRuntime({
   fetchImpl = globalThis.fetch,
   now = Date,
   runtimeConfig,
+  createBrowserDriver = createPlaywrightCdpDouyinDriver,
   setIntervalFn = setInterval,
   clearIntervalFn = clearInterval,
 } = {}) {
@@ -84,20 +86,24 @@ async function createSelfHostedRuntime({
       'SELF_HOSTED_CLIENT_DATABASE',
     )
     : null;
-  const preparedSources = (readOnly ? [] : config.statusSources).map((definition) => ({
-    definition,
-    source: createHttpJsonStatusSource({
-      id: definition.id,
-      url: definition.url,
-      timeoutMs: definition.timeoutMs,
-      allowLoopbackHttp: definition.allowLoopbackHttp === true,
-      bearerToken: definition.bearerTokenEnvironment
-        ? requireEnvironmentSecret(environment, definition.bearerTokenEnvironment)
-        : undefined,
-      fetch: fetchImpl,
-      now: () => currentDate(now),
-    }),
-  }));
+  const sourceDefinitions = (readOnly ? [] : config.statusSources).map((definition) => {
+    if (definition.kind !== 'http-json' || !definition.bearerTokenEnvironment) return definition;
+    return Object.freeze({
+      ...definition,
+      bearerToken: requireEnvironmentSecret(environment, definition.bearerTokenEnvironment),
+    });
+  });
+  const browserOptions = sourceDefinitions.some(definition => definition.kind === 'douyin-page')
+    ? resolveBrowserOptions(config.browser, environment)
+    : undefined;
+  const statusSourceRuntime = createStatusSourceRuntime({
+    definitions: sourceDefinitions,
+    browser: browserOptions,
+    createBrowserDriver,
+    fetch: fetchImpl,
+    now: () => currentDate(now),
+  });
+  const preparedSources = statusSourceRuntime.registrations;
   await assertPortAvailable(serverPreflightConfig.host, serverPreflightConfig.port);
   prepareDataDirectory(dataDirectory, { readOnly });
   const runtimeLock = readOnly ? null : acquireRuntimeLock(dataDirectory);
@@ -129,6 +135,7 @@ async function createSelfHostedRuntime({
     const store = createSqliteStore({ filename: databaseFile, readOnly });
     core = createReminderCore({ store, delivery, clock: now, policy: config.policy, readOnly });
   } catch (error) {
+    await statusSourceRuntime.close().catch(() => {});
     clientStore?.close();
     runtimeLock?.release();
     throw error;
@@ -206,6 +213,7 @@ async function createSelfHostedRuntime({
       clientRequestHandler,
     });
   } catch (error) {
+    await statusSourceRuntime.close().catch(() => {});
     await core.close();
     clientStore?.close();
     runtimeLock?.release();
@@ -218,6 +226,7 @@ async function createSelfHostedRuntime({
     if (started) throw new Error('self-hosted runtime is already started');
     started = true;
     try {
+      await statusSourceRuntime.start();
       await new Promise((resolve, reject) => {
         server.once('error', reject);
         server.listen(serverConfig.port, serverConfig.host, () => {
@@ -227,6 +236,7 @@ async function createSelfHostedRuntime({
       });
     } catch (error) {
       started = false;
+      await statusSourceRuntime.close().catch(() => {});
       throw error;
     }
     if (!readOnly) {
@@ -241,7 +251,7 @@ async function createSelfHostedRuntime({
   }
 
   async function stop() {
-    for (const scheduler of schedulers) scheduler.stop();
+    await Promise.all(schedulers.map(scheduler => scheduler.stop().catch(() => {})));
     if (workerHandle !== undefined) {
       clearIntervalFn(workerHandle);
       workerHandle = undefined;
@@ -250,6 +260,7 @@ async function createSelfHostedRuntime({
       await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     }
     await workerPromise?.catch(() => {});
+    await statusSourceRuntime.close();
     await core.close();
     clientStore?.close();
     runtimeLock?.release();
@@ -375,7 +386,7 @@ function loadRuntimeConfig(filename) {
 
 function normalizeRuntimeConfig(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('self-hosted config must be an object');
-  rejectUnknownKeys(input, ['policy', 'recipients', 'statusSources', 'workerBatchSize', 'client', 'channels'], 'self-hosted config');
+  rejectUnknownKeys(input, ['policy', 'recipients', 'statusSources', 'workerBatchSize', 'client', 'channels', 'browser'], 'self-hosted config');
   if (Object.hasOwn(input, 'recipients') && !Array.isArray(input.recipients)) {
     throw new Error('recipients must be an array');
   }
@@ -404,6 +415,11 @@ function normalizeRuntimeConfig(input) {
   }
   const recipients = (input.recipients || []).map(normalizeRecipient);
   const statusSources = (input.statusSources || []).map(normalizeStatusSource);
+  const browser = normalizeBrowserConfig(input.browser);
+  if (statusSources.some(source => source.kind === 'douyin-page') && !browser) {
+    throw new Error('browser configuration is required for douyin-page status sources');
+  }
+  validateBrowserPollingCapacity(statusSources, browser);
   const client = normalizeClientConfig(input.client);
   const channels = (input.channels || []).map(normalizePublicChannel)
     .sort((left, right) => left.sort - right.sort || left.id.localeCompare(right.id));
@@ -418,6 +434,7 @@ function normalizeRuntimeConfig(input) {
     policy: input.policy ? { ...input.policy } : {},
     recipients,
     statusSources,
+    browser,
     client,
     channels,
     workerBatchSize: boundedInteger(input.workerBatchSize === undefined ? 100 : input.workerBatchSize, 1, 1_000, 'workerBatchSize'),
@@ -547,32 +564,123 @@ function normalizeRecipient(value, index) {
 
 function normalizeStatusSource(value, index) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`statusSources[${index}] must be an object`);
-  rejectUnknownKeys(value, [
-    'id',
-    'broadcasterId',
-    'url',
-    'allowLoopbackHttp',
-    'bearerTokenEnvironment',
-    'timeoutMs',
-    'pollIntervalMs',
-    'confirmationIntervalMs',
-  ], `statusSources[${index}]`);
+  const kind = value.kind === undefined ? 'http-json' : String(value.kind);
+  if (!['http-json', 'douyin-page'].includes(kind)) {
+    throw new Error(`statusSources[${index}].kind must be http-json or douyin-page`);
+  }
+  const commonKeys = [
+    'kind', 'id', 'broadcasterId', 'url', 'timeoutMs', 'pollIntervalMs', 'confirmationIntervalMs',
+  ];
+  rejectUnknownKeys(
+    value,
+    kind === 'http-json'
+      ? [...commonKeys, 'allowLoopbackHttp', 'bearerTokenEnvironment']
+      : [...commonKeys, 'expectedIdentity'],
+    `statusSources[${index}]`,
+  );
   if (value.allowLoopbackHttp !== undefined && typeof value.allowLoopbackHttp !== 'boolean') {
     throw new Error(`statusSources[${index}].allowLoopbackHttp must be a boolean`);
   }
   if (value.bearerTokenEnvironment !== undefined && !/^[A-Z_][A-Z0-9_]{0,100}$/.test(value.bearerTokenEnvironment)) {
     throw new Error(`statusSources[${index}].bearerTokenEnvironment must name an environment variable`);
   }
-  return Object.freeze({
+  const isDouyinPage = kind === 'douyin-page';
+  const normalized = {
+    kind,
     id: boundedString(value.id, 200, `statusSources[${index}].id`),
     broadcasterId: boundedString(value.broadcasterId, 200, `statusSources[${index}].broadcasterId`),
     url: boundedString(value.url, 2_048, `statusSources[${index}].url`),
-    allowLoopbackHttp: value.allowLoopbackHttp === true,
-    bearerTokenEnvironment: value.bearerTokenEnvironment,
-    timeoutMs: optionalBoundedInteger(value.timeoutMs, 5_000, 1, MAX_TIMER_MS, `statusSources[${index}].timeoutMs`),
-    pollIntervalMs: optionalBoundedInteger(value.pollIntervalMs, 120_000, 1, MAX_TIMER_MS, `statusSources[${index}].pollIntervalMs`),
-    confirmationIntervalMs: optionalBoundedInteger(value.confirmationIntervalMs, 10_000, 1, MAX_TIMER_MS, `statusSources[${index}].confirmationIntervalMs`),
+    timeoutMs: optionalBoundedInteger(
+      value.timeoutMs,
+      isDouyinPage ? 30_000 : 5_000,
+      isDouyinPage ? 1_000 : 1,
+      isDouyinPage ? 90_000 : MAX_TIMER_MS,
+      `statusSources[${index}].timeoutMs`,
+    ),
+    pollIntervalMs: optionalBoundedInteger(
+      value.pollIntervalMs,
+      120_000,
+      isDouyinPage ? 60_000 : 1,
+      MAX_TIMER_MS,
+      `statusSources[${index}].pollIntervalMs`,
+    ),
+    confirmationIntervalMs: optionalBoundedInteger(
+      value.confirmationIntervalMs,
+      10_000,
+      isDouyinPage ? 5_000 : 1,
+      isDouyinPage ? 300_000 : MAX_TIMER_MS,
+      `statusSources[${index}].confirmationIntervalMs`,
+    ),
+  };
+  if (kind === 'http-json') {
+    normalized.allowLoopbackHttp = value.allowLoopbackHttp === true;
+    normalized.bearerTokenEnvironment = value.bearerTokenEnvironment;
+  } else {
+    normalized.expectedIdentity = boundedString(
+      value.expectedIdentity,
+      256,
+      `statusSources[${index}].expectedIdentity`,
+    );
+    const canonicalUrl = `https://www.douyin.com/user/${normalized.expectedIdentity}`;
+    if (!/^[A-Za-z0-9._~-]{1,256}$/.test(normalized.expectedIdentity) || normalized.url !== canonicalUrl) {
+      throw new Error(`statusSources[${index}] must use a canonical Douyin /user/ URL matching expectedIdentity`);
+    }
+  }
+  return Object.freeze(normalized);
+}
+
+function normalizeBrowserConfig(value) {
+  if (value === undefined) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('browser must be an object');
+  }
+  rejectUnknownKeys(
+    value,
+    ['kind', 'endpointEnvironment', 'connectTimeoutMs', 'minimumReadSpacingMs'],
+    'browser',
+  );
+  const kind = value.kind === undefined ? 'chromium-cdp' : String(value.kind);
+  if (kind !== 'chromium-cdp') throw new Error('browser.kind must be chromium-cdp');
+  const endpointEnvironment = value.endpointEnvironment === undefined
+    ? 'STATUS_BROWSER_CDP_ENDPOINT'
+    : String(value.endpointEnvironment);
+  if (!/^[A-Z_][A-Z0-9_]{0,100}$/.test(endpointEnvironment)) {
+    throw new Error('browser.endpointEnvironment must name an environment variable');
+  }
+  return Object.freeze({
+    kind,
+    endpointEnvironment,
+    connectTimeoutMs: optionalBoundedInteger(
+      value.connectTimeoutMs,
+      10_000,
+      1,
+      MAX_TIMER_MS,
+      'browser.connectTimeoutMs',
+    ),
+    minimumReadSpacingMs: optionalBoundedInteger(
+      value.minimumReadSpacingMs,
+      12_000,
+      10_000,
+      MAX_TIMER_MS,
+      'browser.minimumReadSpacingMs',
+    ),
   });
+}
+
+function validateBrowserPollingCapacity(statusSources, browser) {
+  const pageSources = statusSources.filter(source => source.kind === 'douyin-page');
+  if (pageSources.length === 0) return;
+  const possibleReadsPerCycle = pageSources.length * 2;
+  // Each source read has one end-to-end timeout; a transition needs two reads.
+  const worstCaseBatchMs = pageSources.reduce((total, source) => total + source.timeoutMs * 2, 0)
+    + browser.minimumReadSpacingMs * Math.max(0, possibleReadsPerCycle - 1)
+    + Math.max(...pageSources.map(source => source.confirmationIntervalMs));
+  const shortestPollIntervalMs = Math.min(...pageSources.map(source => source.pollIntervalMs));
+  if (worstCaseBatchMs > shortestPollIntervalMs) {
+    throw new Error(
+      'browser polling capacity is insufficient: reduce targets/timeouts/spacing or increase poll intervals',
+    );
+  }
 }
 
 async function bootstrapRecipients(core, recipients) {
@@ -868,6 +976,23 @@ function requireEnvironmentSecret(environment, name) {
   const value = String(environment[name] || '').trim();
   if (!value) throw new Error(`missing status-source secret environment variable: ${name}`);
   return value;
+}
+
+function resolveBrowserOptions(browser, environment) {
+  if (!browser) throw new Error('browser configuration is required for page status sources');
+  const endpoint = String(environment[browser.endpointEnvironment] || '').trim();
+  if (!endpoint) {
+    throw new Error(`missing browser endpoint environment variable: ${browser.endpointEnvironment}`);
+  }
+  if (endpoint.length > 2_048 || /\r|\n/.test(endpoint)) {
+    throw new Error(`${browser.endpointEnvironment} must be a single endpoint no longer than 2048 characters`);
+  }
+  return Object.freeze({
+    kind: browser.kind,
+    endpoint,
+    connectTimeoutMs: browser.connectTimeoutMs,
+    minimumReadSpacingMs: browser.minimumReadSpacingMs,
+  });
 }
 
 function currentDate(clock) {
